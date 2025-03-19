@@ -3,6 +3,8 @@ from personnel.models import Grade  # Import the Grade model
 from personnel.models import Wilaya
 from personnel.models import Personnel
 from datetime import timedelta
+from locations.models import WilayaDistance
+from decimal import Decimal
 #from .models import Mission
 
 class GradePayment(models.Model):
@@ -93,20 +95,63 @@ class Mission(models.Model):
 class MissionPersonnel(models.Model):
     mission = models.ForeignKey(Mission, on_delete=models.CASCADE)
     personnel = models.ForeignKey(Personnel, on_delete=models.CASCADE)
-    transport_payment = models.DecimalField(max_digits=10, decimal_places=2)
-    meal_payment = models.DecimalField(max_digits=10, decimal_places=2)
+    transport_payment = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    meal_payment = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     lodging_payment = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+
+    def is_south(self):
+        """Determine if the mission's destination wilaya is in the south."""
+        return self.mission.destination_wilaya.is_south  # Assuming a boolean field in Wilaya
+
+    def get_grade_payment(self):
+        """Retrieve the correct GradePayment entry for the personnel's grade."""
+        return GradePayment.objects.get(grade=self.personnel.grade)
+
+    def calculate_meal_payment(self):
+        """Calculate meal payment based on the wilaya location (north/south)."""
+        grade_payment = self.get_grade_payment()
+        meal_price = grade_payment.meal_payment_south if self.is_south() else grade_payment.meal_payment_north
+        return self.mission.meals_covered * meal_price
+
+    
+
+    def calculate_transport_payment(self):
+        """Calculate transport payment based on the distance stored in WilayaDistance."""
+        if self.mission.transport_type.lower() == "personal car":
+            # Fetch the distance from WilayaDistance
+            distance_entry = WilayaDistance.objects.filter(
+                  
+                wilaya_to=self.mission.destination_wilaya   # The destination wilaya
+            ).first()
+
+            if distance_entry:
+                return Decimal(distance_entry.distance_km )* Decimal('1')  # For now, we use 1 DA per km
+            else:
+                return Decimal('0')  # No distance found, return 0
+        return Decimal('0')  # If not a personal car, no transport payment
+
+
+
+    def calculate_lodging_payment(self):
+        """Calculate lodging payment based on the wilaya location (north/south)."""
+        grade_payment = self.get_grade_payment()
+        lodging_price = grade_payment.lodging_payment_south if self.is_south() else grade_payment.lodging_payment_north
+        return self.mission.nights_stayed * lodging_price
+
+    def save(self, *args, **kwargs):
+        """Override save method to auto-calculate payments."""
+        self.meal_payment = self.calculate_meal_payment()
+        self.transport_payment = self.calculate_transport_payment()
+        self.lodging_payment = self.calculate_lodging_payment()
+        super().save(*args, **kwargs)
 
     @property
     def total_payment(self):
-        """Calculates total payment based on funding type"""
-        total = self.transport_payment + self.meal_payment
-        if self.lodging_payment:
-            total += self.lodging_payment
+        """Calculate total payment based on funding type."""
+        total = self.transport_payment + self.meal_payment + (self.lodging_payment or Decimal('0'))
 
-        # Apply funding adjustment
         if self.mission.funding_type.strip().lower() == "25% financé":
-            return round(total * 0.25, 2)  # Only 25% is covered
+            return round(total * Decimal('0.25'), 2)  # Only 25% is covered
         return round(total, 2)  # Fully funded
 
     def __str__(self):
