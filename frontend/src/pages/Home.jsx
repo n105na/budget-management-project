@@ -42,7 +42,7 @@ export default function Home() {
             style={{ borderColor: 'var(--primary)', color: 'var(--primary)' }}
             onClick={() => navigate('/dashboard')}
           >
-            View Demo Dashboard
+            Somthing
           </button>
         </div>
       </div>
