@@ -5,6 +5,7 @@ from rest_framework import status
 from django.contrib.auth import get_user_model
 from .serializers import UserSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.permissions import AllowAny
 
 User = get_user_model()
 
@@ -56,6 +57,7 @@ def delete_user(request, user_id):
 
 # Login view
 @api_view(['POST'])
+@permission_classes([AllowAny])
 def login_user(request):
     username = request.data.get("username")
     password = request.data.get("password")
