@@ -1,8 +1,5 @@
 @import "tailwindcss";
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
+/*
 @layer base {
   :root {
     --text: #2b3d50;
@@ -15,9 +12,9 @@
   .dark {
     --text: #f6f8f9;
     --background: #2b3d50;
-    --primary: #3344ff; /* Or a brighter blue */
+    --primary: #3344ff; 
     --secondary: #3d4b5a;
-    --accent: #ff4d91;  /* Lighter pink for contrast */
+    --accent: #ff4d91; 
   }
 }
 
@@ -28,5 +25,5 @@ html, body, #root {
   padding: 0;
   background-color: var(--background); 
   color: var(--text);
-}
+}*/
 

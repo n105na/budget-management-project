@@ -9,19 +9,22 @@ import Reports from './pages/Reports';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import NotFound from './pages/NotFound';
+import MissionManager from './pages/MissionManager';
 
 const RoutesList = () => {
   return (
     <Routes>
       <Route path="/" element={<Home />} />
-      <Route path="/budget" element={<Budget />} />
-      <Route path="/missions" element={<Missions />} />
-      <Route path="/engagement" element={<Engagement />} />
-      <Route path="/mandatement" element={<Mandatement />} />
-      <Route path="/reports" element={<Reports />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
-      <Route path="*" element={<NotFound />} />
+      <Route path="/missionManager" element={<MissionManager />} />
+      {/*
+        <Route path="/missions" element={<Missions />} />
+        <Route path="/engagement" element={<Engagement />} />
+        <Route path="/mandatement" element={<Mandatement />} />
+        <Route path="/reports" element={<Reports />} />  
+        <Route path="*" element={<NotFound />} />
+      */}
     </Routes>
   );
 };
