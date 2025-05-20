@@ -3,11 +3,8 @@ from django.db import models
 
 
 class Wilaya(models.Model):
-    code = models.PositiveIntegerField(unique=True)  # Wilaya code
+    code = models.PositiveIntegerField(unique=True ,null=False, blank=False)  # Wilaya code
     name = models.CharField(max_length=100, unique=True)  # Wilaya name in French
-    ar_name = models.CharField(max_length=100, unique=True)  # Wilaya name in Arabic
-    longitude = models.FloatField()  # Longitude
-    latitude = models.FloatField()  # Latitude
     is_south = models.BooleanField()  # True if it's in the south
 
     def __str__(self):
