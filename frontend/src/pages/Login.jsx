@@ -23,7 +23,7 @@ export default function Login() {
       setError("");
 
       try {
-        const response = await fetch(`${API_URL}/api/token/`, {
+        const response = await fetch(`${API_URL}/api/login/`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ username, password }),
@@ -84,4 +84,4 @@ export default function Login() {
       </div>
     </div>
   );
-  }}
+  }
