@@ -43,7 +43,7 @@ export default function Register() {
       const data = await response.json();
       localStorage.setItem("access", data.access);
       localStorage.setItem("refresh", data.refresh);
-      
+      //navigate("/dashboard");
     } catch (err) {
       setError(err.message);
     }
