@@ -20,6 +20,8 @@ export default function Register() {
   const navigate = useNavigate();
 
   const API_URL = import.meta.env.VITE_API_URL;
+  const token = localStorage.getItem("access"); //adding this line (taking the token from local storage )
+  const [success, setSuccess] = useState("");
 
   const handleRegister = async (e) => {
     e.preventDefault();
@@ -27,7 +29,10 @@ export default function Register() {
     try {
       const response = await fetch(`${API_URL}/api/register/`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`  
+        },
         body: JSON.stringify({  
           password,
           username,
@@ -123,6 +128,7 @@ export default function Register() {
           <button type="submit" className="w-full py-2 rounded-md font-semibold transition bg-[#00064d] text-[#f6f8f9] hover:cursor-pointer" >
             Register
           </button>
+          {success && <p className="text-green-600 mb-3 text-center">{success}</p>}
 
         </form>
 
