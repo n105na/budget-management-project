@@ -46,12 +46,9 @@ export default function Register() {
       }
 
       const data = await response.json();
-      //localStorage.setItem("access", data.access); // hado rahom dayrin problem like yenrigistro tokens t3 new user w homa makash mmpa aya mn9dosh later on ncriyo users we7do5rin ma3dnash le droit 
-      //localStorage.setItem("refresh", data.refresh);// we better not do this 
-      setSuccess(" User registered successfully!");
-      setUsername("");
-      setPassword("");
-      setEmail("");
+      localStorage.setItem("access", data.access);
+      localStorage.setItem("refresh", data.refresh);
+      //navigate("/dashboard");
     } catch (err) {
       setError(err.message);
     }

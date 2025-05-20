@@ -16,28 +16,33 @@ export default function Login() {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    setError("");
-    try {
-      const response = await fetch(`${API_URL}/api/login/`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Invalid credentials");
-      }
-
-      const data = await response.json();
-      setSucess("You Are Logged In Succefully")
-      localStorage.setItem("access", data.access);
-      localStorage.setItem("refresh", data.refresh);
-      setInterval(() => {
-        navigate("/dashboard");
-      }, 2000);
-    } catch (err) {
-      setError(err.message);
+    if(!username || !password){
+      setError("Please fill all the fields")
+      return
     }
+      setError("");
+
+      try {
+        const response = await fetch(`${API_URL}/api/token/`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Invalid credentials");
+        }
+
+        const data = await response.json();
+        setSucess("You Are Logged In Succefully")
+        localStorage.setItem("access", data.access);
+        localStorage.setItem("refresh", data.refresh);
+        setInterval(() => {
+          navigate("/missionManager");
+        }, 2000);
+      } catch (err) {
+        setError(err.message);
+      }
   };
 
   return (
@@ -48,7 +53,7 @@ export default function Login() {
         <h1 className="text-3xl font-bold mb-6 text-center ">Login</h1>
         <form onSubmit={handleLogin} className="space-y-4">
           {error && <p className="text-red-500 mb-3 text-center">{error}</p>}
-          {sucess && <p className="text-red-500 mb-3 text-center">{sucess}</p>}
+          {sucess && <p className="text-green-500 mb-3 text-center">{sucess}</p>}
           <div className="mb-4">
             <label htmlFor="username" className="block text-lg font-semibold mb-1">User Name</label>
             <input
@@ -79,4 +84,4 @@ export default function Login() {
       </div>
     </div>
   );
-}
+  }}

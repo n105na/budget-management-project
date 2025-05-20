@@ -14,11 +14,12 @@ import MissionManager from './pages/MissionManager';
 const RoutesList = () => {
   return (
     <Routes>
-      <Route path="/" element={<Home />} />
+      <Route path="/" element={<MissionManager />} />
+      {/*
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/missionManager" element={<MissionManager />} />
-      {/*
+      
         <Route path="/missions" element={<Missions />} />
         <Route path="/engagement" element={<Engagement />} />
         <Route path="/mandatement" element={<Mandatement />} />
