@@ -1,9 +1,61 @@
-import { Menu, Home, DollarSign, Medal, BarChart3, Settings, MapPin, Users, BadgeCheck } from 'lucide-react';
-import { useState } from 'react';
+import { Menu, Home, DollarSign, Medal, BarChart3, Settings, MapPin, Users, BadgeCheck, Search, Plus } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { jwtDecode } from "jwt-decode";
+import { fetchWithAuth } from '../utils/fetchWithAuth';
+import Personnels from '../../components/Personells';
 
 const MissionManager = () => {
 
+
   const [selectedOption,setSelectedOption] = useState('Dashboard')
+  const [user,setUser] = useState("")
+  const accessToken = localStorage.getItem("access");
+  const refreshToken = localStorage.getItem("refresh");
+  const [missions, setMissions] = useState([]);
+
+  const [personSearched,setPersonSearched] = useState('')
+
+  const [personnels, setPersonnels] = useState([]);
+  const API_URL = import.meta.env.VITE_API_URL;
+
+
+
+  useEffect(() => {
+
+    if (accessToken) {
+      const loggedInUser = jwtDecode(accessToken);
+      console.log("Decoded access token:", loggedInUser);
+      setUser(loggedInUser)
+      
+    }
+
+    console.log("accessToken",accessToken);
+    console.log("refreshToken",refreshToken);
+
+    /*const isExpired = loggedInUser.exp * 1000 < Date.now();
+    if (isExpired) {
+      console.log("Token expired!");
+    }*/
+  },[accessToken,refreshToken])
+
+
+  //fetching all missions
+  useEffect(() => {
+    const fetchMissions = async () => {
+      const res = await fetchWithAuth(`${API_URL}/api/mission/`,{
+        method: "GET"
+      }); 
+      if (res.ok) {
+        const data = await res.json();
+        setMissions(data);
+      }
+      
+    };
+
+    fetchMissions();
+  }, []);
+
+
   return (
     <div className="flex">
       
@@ -27,10 +79,10 @@ const MissionManager = () => {
             Missions
           </li>
           <li 
-          onClick={() => setSelectedOption('Personnel')}
-          className={`flex items-center gap-8 text-lg hover:bg-[#870839] hover:text-white p-2 cursor-pointer rounded-[4px] ${selectedOption === "Personnel" ? "bg-[#870839] text-white" : ""}`}>
+          onClick={() => setSelectedOption('Personnels')}
+          className={`flex items-center gap-8 text-lg hover:bg-[#870839] hover:text-white p-2 cursor-pointer rounded-[4px] ${selectedOption === "Personnels" ? "bg-[#870839] text-white" : ""}`}>
             <Users className="w-6 h-6" />
-            Personnel
+            Personnels
           </li>
           <li 
           onClick={() => setSelectedOption('Grades')}
@@ -69,15 +121,18 @@ const MissionManager = () => {
       <div className=" h-screen w-full">
 
         {selectedOption === "Dashboard" && 
-         <h1 className='text-3xl text-center'>{selectedOption}</h1>
+         <h1 className='text-3xl p-8 text-[#00064d]'>Welcome Back,<br/><span className='font-bold'>{user ? user.username : "sir"}</span></h1>
+
+
+
         }
 
         {selectedOption === "Missions" && 
          <h1 className='text-3xl text-center'>{selectedOption}</h1>
         }
 
-        {selectedOption === "Personnel" && 
-         <h1 className='text-3xl text-center'>{selectedOption}</h1>
+        {selectedOption === "Personnels" && 
+         <Personnels userLoggedin = {user} />
         }
 
         {selectedOption === "Grades" && 

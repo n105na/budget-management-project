@@ -9,6 +9,16 @@ from rest_framework.permissions import AllowAny
 
 User = get_user_model()
 
+# the custom token i made 
+class CustomRefreshToken(RefreshToken):
+    @classmethod
+    def for_user(cls, user):
+        token = super().for_user(user)
+        token["username"] = user.username
+        token["role"] = user.role  
+        return token
+    
+    
 # Admin-only user registration
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])  # Only admins can register users
@@ -64,10 +74,12 @@ def login_user(request):
     user = User.objects.filter(username=username).first()
 
     if user and user.check_password(password):
-        refresh = RefreshToken.for_user(user)
+        refresh = CustomRefreshToken.for_user(user)
         return Response({
             "refresh": str(refresh),
             "access": str(refresh.access_token),
+            "username": user.username,
+            "role":user.role,
         })
     return Response({"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
 
