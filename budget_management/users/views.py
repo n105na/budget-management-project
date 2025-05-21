@@ -104,13 +104,7 @@ def login_user(request):
         return Response({
             "refresh": str(refresh),
             "access": str(refresh.access_token),
-<<<<<<< HEAD
-            #"username": user.username,
-            #"role":user.role,
-=======
-            "username": user.username,
-            "role":user.role,
->>>>>>> main
+
         })
     return Response({"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
 
