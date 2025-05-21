@@ -9,6 +9,7 @@ export default function Login() {
 
   const [error, setError] = useState("");
   const [sucess, setSucess] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
 
@@ -21,6 +22,7 @@ export default function Login() {
       return
     }
       setError("");
+      setLoading(true);
 
       try {
         const response = await fetch(`${API_URL}/api/login/`, {
@@ -37,11 +39,13 @@ export default function Login() {
         setSucess("You Are Logged In Succefully")
         localStorage.setItem("access", data.access);
         localStorage.setItem("refresh", data.refresh);
+        setLoading(false);
         setInterval(() => {
           navigate("/missionManager");
         }, 2000);
       } catch (err) {
         setError(err.message);
+        setLoading(false);
       }
   };
 
@@ -77,7 +81,7 @@ export default function Login() {
             />
           </div>
           <button type="submit" className="w-full py-2 rounded-md font-semibold transition bg-[#00064d] text-[#f6f8f9] hover:cursor-pointer" >
-            Log In
+            {loading ? "Loading..." : "Log In"}
           </button>
         </form>
 

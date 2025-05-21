@@ -35,6 +35,16 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):  # ReadOnly to prevent public 
     }
     ordering_fields = ['username', 'email', 'role', 'date_joined']
 
+# the custom token i made 
+class CustomRefreshToken(RefreshToken):
+    @classmethod
+    def for_user(cls, user):
+        token = super().for_user(user)
+        token["username"] = user.username
+        token["role"] = user.role  
+        return token
+    
+    
 # Admin-only user registration
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])  # Only admins can register users
@@ -94,8 +104,13 @@ def login_user(request):
         return Response({
             "refresh": str(refresh),
             "access": str(refresh.access_token),
+<<<<<<< HEAD
             #"username": user.username,
             #"role":user.role,
+=======
+            "username": user.username,
+            "role":user.role,
+>>>>>>> main
         })
     return Response({"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
 
