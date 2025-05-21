@@ -156,3 +156,5 @@ class MissionPersonnel(models.Model):
 
     def __str__(self):
         return f"{self.personnel.name} - {self.mission.mission_nature} ({self.total_payment} DA)"
+    class Meta:
+        unique_together = ('personnel', 'mission')

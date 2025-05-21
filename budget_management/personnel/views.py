@@ -23,7 +23,8 @@ class PersonnelViewSet(viewsets.ModelViewSet):
         'grade__name': ['icontains'],     # grade name contains
         'wilaya': ['exact'],              # wilaya ID
         'wilaya__name': ['icontains'],    # wilaya name contains
-        'is_ccp_account': ['exact'],      # true/false
+        'is_ccp_account': ['exact'],
+                    # true/false
     }
     ordering_fields = ['name', 'wilaya__name', 'grade__name']
    # GET /api/personnel/?ordering=name

@@ -1,6 +1,11 @@
-from django.urls import path
+from django.urls import path, include
 from .views import register_user, login_user,protected_view,delete_user,update_user
 from rest_framework_simplejwt.views import TokenRefreshView
+from .views import UserViewSet
+from rest_framework.routers import DefaultRouter
+
+router = DefaultRouter()
+router.register(r'users', UserViewSet, basename='user')
 
 
 urlpatterns = [
@@ -10,5 +15,6 @@ urlpatterns = [
     path('protected/', protected_view, name='protected'),
     path('update_user/<user_id>/', update_user, name='update_user'),
     path('delete_user/<user_id>/', delete_user, name='delete_user'), 
+    path('', include(router.urls)),
 ]
 

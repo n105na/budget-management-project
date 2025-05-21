@@ -1,4 +1,6 @@
 from rest_framework import serializers
+from personnel.serializers import PersonnelSerializer
+from personnel.models import Personnel
 from .models import GradePayment
 from .models import Mission, MissionPersonnel
 
@@ -22,8 +24,26 @@ class MissionSerializer(serializers.ModelSerializer):
 
 
 class MissionPersonnelSerializer(serializers.ModelSerializer):
-    total_payment = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+    mission = serializers.PrimaryKeyRelatedField(
+        queryset=Mission.objects.all(), write_only=True
+    )
+    personnel = serializers.PrimaryKeyRelatedField(
+        queryset=Personnel.objects.all(), write_only=True
+    )
+
+    mission_detail = MissionSerializer(source='mission', read_only=True)
+    personnel_detail = PersonnelSerializer(source='personnel', read_only=True)
 
     class Meta:
         model = MissionPersonnel
-        fields = '__all__'
+        fields = [
+            "id",
+            "mission",         # for write
+            "personnel",       # for write
+            "mission_detail",  # for read
+            "personnel_detail",# for read
+            "transport_payment",
+            "meal_payment",
+            "lodging_payment",
+            "total_payment",
+        ]
