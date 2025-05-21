@@ -1,12 +1,13 @@
-import { Menu, Home, DollarSign, Medal, BarChart3, Settings, MapPin, Users, BadgeCheck, Search, Plus } from 'lucide-react';
+import { Menu, Home, DollarSign, Medal, BarChart3, Settings, MapPin, Users, BadgeCheck, Search, Plus, LogOut } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { jwtDecode } from "jwt-decode";
 import { fetchWithAuth } from '../utils/fetchWithAuth';
 import Personnels from '../../components/Personells';
+import { useNavigate } from 'react-router-dom';
 
 const MissionManager = () => {
 
-
+  const navigate = useNavigate();
   const [selectedOption,setSelectedOption] = useState('Dashboard')
   const [user,setUser] = useState("")
   const accessToken = localStorage.getItem("access");
@@ -38,6 +39,12 @@ const MissionManager = () => {
     }*/
   },[accessToken,refreshToken])
 
+  //for disconnecting the user
+  const handleLogout = () => {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    navigate('/login');
+  };
 
   //fetching all missions
   useEffect(() => {
@@ -118,13 +125,26 @@ const MissionManager = () => {
         
       </div>
 
-      <div className=" h-screen w-full">
+      <div className="h-screen w-full">
 
         {selectedOption === "Dashboard" && 
-         <h1 className='text-3xl p-8 text-[#00064d]'>Welcome Back,<br/><span className='font-bold'>{user ? user.username : "sir"}</span></h1>
+        <>
+        <div className='flex justify-between items-center pr-5'>
+          <h1 className='text-3xl p-8 text-[#00064d]'>Welcome Back,<br/><span className='font-bold'>{user ? user.username : "sir"}</span></h1>
+          <button 
+          onClick={handleLogout}
+            className="bg-red-500 text-white font-semibold flex px-4 py-2 rounded-lg justify-center items-center gap-4 text-xl hover:cursor-pointer transition-transform ease-in-out hover:scale-105"
+          >
+            <LogOut  color='white'/>
+            Disconnect
+          </button>
+        </div>
+         
 
-
-
+         
+          
+         
+        </>
         }
 
         {selectedOption === "Missions" && 
