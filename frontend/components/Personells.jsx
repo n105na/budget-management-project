@@ -1,6 +1,6 @@
 import {Search, Plus, Edit, UserCircle, X} from 'lucide-react'
 import { fetchWithAuth } from '../src/utils/fetchWithAuth';
-import { useEffect, useState } from 'react';
+import { useEffect, useState ,useMemo } from 'react';
 
 const Personnels = (user) => {
 
@@ -14,7 +14,11 @@ const Personnels = (user) => {
 
   const [wilayas, setWilayas] = useState([]);
 
-  
+  const [filters, setFilters] = useState({
+    name: '',
+    profession: '',
+    grade: ''
+  });
   const [error, setError] = useState(null);
   const API_URL = import.meta.env.VITE_API_URL;
   const [activeTab, setActiveTab] = useState("list");
@@ -22,20 +26,11 @@ const Personnels = (user) => {
   const [formData, setFormData] = useState({
     name: "",
     profession: "",
-    grade: {
-      id: "",
-      profession: "",
-      name: ""
-    },
+    grade_id: "",
     account_number: "",
     is_ccp_account: true,
     address: "",
-    wilaya: {
-      id: "",
-      code: "",
-      name: "",
-      is_south: false
-    }
+    wilaya_id: ""
   });
 
   // Check if user has permission to modify personnel
@@ -103,6 +98,7 @@ const Personnels = (user) => {
       });
       if (res.ok) {
         const data = await res.json();
+        console.log("personnels : ",data);
         setPersonnels(data);
         setError(null);
       } else {
@@ -115,6 +111,7 @@ const Personnels = (user) => {
       setLoading(false);
     }
   };
+
 
   // Add new personnel
   const addPersonnel = async () => {
@@ -140,13 +137,25 @@ const Personnels = (user) => {
     }
   };
 
+  function transformForPut(data) {
+      return {
+        name: data.name || "",
+        profession: data.profession || null,
+        grade_id: data.grade?.id || null,
+        account_number: data.account_number || "",
+        is_ccp_account: data.is_ccp_account ?? false,
+        address: data.address || "",
+        wilaya_id: data.wilaya?.id || null,
+    };
+  }
+
   // Update personnel
   const updatePersonnel = async () => {
     if (!hasPermission || !selectedPerson) return;
 
     try {
       const res = await fetchWithAuth(`${API_URL}/api/personnel/${selectedPerson.id}/`, {
-        method: "PUT",
+        method: "PATCH",
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
       });
@@ -186,15 +195,19 @@ const Personnels = (user) => {
       console.error(err);
     }
   };
+useEffect(() => {
+console.log("formData : ",formData);
 
+},[formData])
   // Handle edit button click
   const handleEdit = (personnelId) => {
     if (!hasPermission) return;
     
     const person = personnels.find(p => p.id === personnelId);
+    const newPerson = transformForPut(person);
     if (person) {
       setSelectedPerson(person);
-      setFormData({...person});
+      setFormData({...newPerson});
       setActiveTab("edit");
     }
   };
@@ -213,43 +226,22 @@ const Personnels = (user) => {
     setFormData({
       name: "",
       profession: "",
-      grade: {
-        id: "",
-        profession: "",
-        name: ""
-      },
+      grade_id: "",
       account_number: "",
       is_ccp_account: true,
       address: "",
-      wilaya: {
-        id: "",
-        code: "",
-        name: "",
-        is_south: false
-      }
+      wilaya_id:""
     });
   };
 
-  // Handle form input changes
   const handleChange = (e) => {
     const { name, value } = e.target;
     
-    // Handle nested objects
-    if (name.includes('.')) {
-      const [parent, child] = name.split('.');
-      setFormData({
-        ...formData,
-        [parent]: {
-          ...formData[parent],
-          [child]: value
-        }
-      });
-    } else {
-      setFormData({
-        ...formData,
-        [name]: value
-      });
-    }
+    setFormData({
+      ...formData,
+      [name]: value
+    });
+    
   };
 
   // Handle checkbox changes
@@ -266,43 +258,121 @@ const Personnels = (user) => {
     fetchPersonnels();
   }, []);
 
-  // Filter personnel based on search
+  /* Filter personnel based on search
   const filteredPersonnel = personnels.filter(person => 
     person.name.toLowerCase().includes(personSearched.toLowerCase())
-  );
+  );*/
+//for filtratoin
 
+
+  // Get unique values for filter dropdowns
+  const uniqueProfessions = useMemo(() => {
+    return [...new Set(personnels.map(person => person.profession))];
+  }, [personnels]);
+
+  const uniqueGrades = useMemo(() => {
+    return [...new Set(personnels.map(person => person.grade.name))];
+  }, [personnels]);
+
+  // Filter personnel based on current filters
+  const filteredPersonnel = useMemo(() => {
+    return personnels.filter(person => {
+      const nameMatch = person.name.toLowerCase().includes(filters.name.toLowerCase());
+      const professionMatch = filters.profession === '' || person.profession === filters.profession;
+      const gradeMatch = filters.grade === '' || person.grade.name === filters.grade;
+      
+      return nameMatch && professionMatch && gradeMatch;
+    });
+  }, [personnels, filters]);
+
+  const handleFilterChange = (filterType, value) => {
+    setFilters(prev => ({
+      ...prev,
+      [filterType]: value
+    }));
+  };
+
+  const clearFilters = () => {
+    setFilters({
+      name: '',
+      profession: '',
+      grade: ''
+    });
+  };
   return(
     <>
-      <div className='flex gap-30 justify-center items-center'>
-        <p className='text-3xl p-8 text-[#00064d]'>Personnels</p>
+      
+    <div className='flex flex-col md:flex-row items-center justify-between bg-white px-6 py-4 rounded-xl shadow-md mb-6'>
+      <p className='text-4xl font-extrabold text-[#00064d] mb-4 md:mb-0'>Personnels</p>
 
-        <div className='bg-gray-300 rounded-2xl p-4 flex gap-4 w-lg'>
-          <Search />
-          <input 
-            type='text' 
-            placeholder='search by name' 
-            id='searchbar' 
-            value={personSearched} 
-            className='focus:outline-none bg-transparent' 
-            onChange={(e) => setPersonSearched(e.target.value)} 
+      <div className='flex flex-col md:flex-row items-center gap-4'>
+        {/* Search Bar */}
+        <div className='relative flex items-center bg-gray-100 rounded-full px-4 py-2 w-full md:w-auto shadow-sm'>
+          <Search className='w-5 h-5 text-gray-500 mr-2' />
+          <input
+            type='text'
+            placeholder='Search by name...'
+            id='searchbar'
+            value={filters.name}
+            onChange={(e) => handleFilterChange('name', e.target.value)}
+            className='flex-grow bg-transparent focus:outline-none text-gray-700 placeholder-gray-500'
           />
         </div>
-        <div>
-          <button 
-            onClick={() => {
-              if (hasPermission) {
-                setActiveTab("add");
-                resetForm();
-              }
-            }}
-            className={`flex gap-4 bg-[#00064d] text-white p-4 rounded-xl ${hasPermission ? "hover:cursor-pointer" : "hover:cursor-not-allowed"} transition-transform duration-300 ease-in-out hover:scale-105`}
-          >
-            <Plus/>
-            Add New Personnel
-          </button>
-        </div>
+
+        {/* Profession Filter */}
+        <select
+          name="profession"
+          value={filters.profession}
+          onChange={(e) => handleFilterChange('profession', e.target.value)}
+          className="bg-gray-100 rounded-full px-4 py-2 text-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#00064d] transition-all duration-200 w-full md:w-auto"
+        >
+          <option value="">All Professions</option>
+          <option value="Teacher">Teacher</option>
+          <option value="Worker">Worker</option>
+          <option value="Driver">Driver</option>
+        </select>
+
+        {/* Grade Filter */}
+        <select
+          name="grade_id"
+          value={filters.grade}
+          onChange={(e) => handleFilterChange('grade', e.target.value)}
+          className="bg-gray-100 rounded-full px-4 py-2 text-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#00064d] transition-all duration-200 w-full md:w-auto"
+        >
+          <option value="">All Grades</option>
+          {grades && grades.map((grade, key) => (
+            <option key={key} value={grade.id}>{grade.profession} - {grade.name}</option>
+          ))}
+        </select>
+
+        {/* Clear Filters Button */}
+        <button
+          onClick={clearFilters}
+          className="bg-red-500 text-white rounded-full px-5 py-2 font-semibold shadow-md
+                    hover:bg-red-600 transition-all duration-300 transform hover:scale-105
+                    focus:outline-none focus:ring-2 focus:ring-red-500 w-full md:w-auto"
+        >
+          Clear Filters
+        </button>
       </div>
-      
+
+      {/* Add New Personnel Button */}
+      <button
+        onClick={() => {
+          if (hasPermission) {
+            setActiveTab("add");
+            resetForm();
+          }
+        }}
+        className={`mt-4 md:mt-0 flex items-center gap-3 bg-[#00064d] text-white px-6 py-3 rounded-full font-semibold shadow-lg
+                    ${hasPermission ? "hover:bg-[#000a6b] cursor-pointer" : "opacity-60 cursor-not-allowed"}
+                    transition-transform duration-300 ease-in-out hover:scale-105`}
+      >
+        <Plus className='w-5 h-5' />
+        Add New Personnel
+      </button>
+    </div>
+
       {/* Error message */}
       {error && (
         <div className="mx-10 mb-4 bg-red-100 border-l-4 border-red-500 text-red-700 p-4">
@@ -521,47 +591,30 @@ const Personnels = (user) => {
                   <div>
                     <label className="block text-gray-700 mb-1">Grade Name</label>
                     <select
-                      name="grade.name"
-                      value={formData.grade.name}
+                      name="grade_id"
+                      value={formData.grade_id}
                       onChange={handleChange}
                       className="w-full border rounded-lg p-2"
                     >
                       {grades && grades.map((grade,key) => {
                         return(
-                          <option key={key}>{grade.profession}-{grade.name}</option>
+                          <option key={key} value={grade.id}>{grade.profession}-{grade.name}</option>
                         )
                       })} 
                     </select>
                   </div>
                   
                   <div>
-                    <label className="block text-gray-700 mb-1">Wilaya Name</label>
+                    <label className="block text-gray-700 mb-1">Wilaya</label>
                     <select
-                      name="wilaya.name"
-                      value={formData.wilaya.name}
+                      name="wilaya_id"
+                      value={formData.wilaya_id}
                       onChange={handleChange}
                       className="w-full border rounded-lg p-2"
                     >
                       {wilayas && wilayas.map((wilaya,key) => {
                         return(
-                          <option key={key}>{wilaya.name}</option>
-                        )
-                      })} 
-                    </select>
-                    
-                  </div>
-                  
-                  <div>
-                    <label className="block text-gray-700 mb-1">Wilaya Code</label>
-                    <select
-                      name="wilaya.code"
-                      value={formData.wilaya.code}
-                      onChange={handleChange}
-                      className="w-full border rounded-lg p-2"
-                    >
-                      {wilayas && wilayas.map((wilaya,key) => {
-                        return(
-                          <option key={wilaya.code} value={wilaya.code}>
+                          <option key={key} value={wilaya.id} >
                             {wilaya.code}-{wilaya.name}
                           </option>
                         )
@@ -643,13 +696,16 @@ const Personnels = (user) => {
                   
                   <div>
                     <label className="block text-gray-700 mb-1">Profession</label>
-                    <input
-                      type="text"
+                    <select
                       name="profession"
                       value={formData.profession}
                       onChange={handleChange}
                       className="w-full border rounded-lg p-2"
-                    />
+                    >
+                      <option value="Teacher">Teacher</option>
+                      <option value="Worker">Worker</option>
+                      <option value="Driver">Driver</option>
+                    </select>
                   </div>
                   
                   <div>
@@ -667,35 +723,37 @@ const Personnels = (user) => {
                 <div className="space-y-4">
                   <div>
                     <label className="block text-gray-700 mb-1">Grade Name</label>
-                    <input
-                      type="text"
-                      name="grade.name"
-                      value={formData.grade.name}
+                    <select
+                      name="grade_id"
+                      value={formData.grade_id}
                       onChange={handleChange}
                       className="w-full border rounded-lg p-2"
-                    />
+                    >
+                      {grades && grades.map((grade,key) => {
+                        return(
+                          <option key={key} value={grade.id}>{grade.profession}-{grade.name}</option>
+                        )
+                      })} 
+                    </select>
                   </div>
                   
                   <div>
-                    <label className="block text-gray-700 mb-1">Wilaya Name</label>
-                    <input
-                      type="text"
-                      name="wilaya.name"
-                      value={formData.wilaya.name || ""}
+                    <label className="block text-gray-700 mb-1">Wilaya</label>
+                    <select
+                      name="wilaya_id"
+                      value={formData.wilaya_id}
                       onChange={handleChange}
                       className="w-full border rounded-lg p-2"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-gray-700 mb-1">Wilaya Code</label>
-                    <input
-                      type="number"
-                      name="wilaya.code"
-                      value={formData.wilaya.code}
-                      onChange={handleChange}
-                      className="w-full border rounded-lg p-2"
-                    />
+                    >
+                      {wilayas && wilayas.map((wilaya,key) => {
+                        return(
+                          <option key={key} value={wilaya.id} >
+                            {wilaya.code}-{wilaya.name}
+                          </option>
+                        )
+                      })} 
+                    </select>
+                    
                   </div>
                 </div>
                 
