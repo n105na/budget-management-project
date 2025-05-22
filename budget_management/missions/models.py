@@ -5,7 +5,11 @@ from personnel.models import Personnel
 from datetime import timedelta
 from locations.models import WilayaDistance
 from decimal import Decimal
+
 #from .models import Mission
+from django.core.exceptions import ValidationError
+from datetime import datetime, timedelta  # Make sure this is imported if not already
+
 
 class GradePayment(models.Model):
     grade = models.ForeignKey(Grade, on_delete=models.CASCADE)
@@ -13,10 +17,18 @@ class GradePayment(models.Model):
     meal_payment_south = models.DecimalField(max_digits=10, decimal_places=2)
     lodging_payment_north = models.DecimalField(max_digits=10, decimal_places=2)
     lodging_payment_south = models.DecimalField(max_digits=10, decimal_places=2)
-
+    year = models.PositiveIntegerField(default=datetime.now().year)
     def __str__(self):
         return f"{self.grade.name} - Payments"
 
+
+class Budget(models.Model):
+    year = models.PositiveIntegerField(default=datetime.now().year)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    added_on = models.DateField(auto_now_add=True)  # When the budget was added
+
+    def __str__(self):
+        return f"{self.year} - {self.amount} DZD added on {self.added_on}"
 
 
 
@@ -51,43 +63,49 @@ class Mission(models.Model):
     time_arrival = models.TimeField()
     funding_type = models.CharField(max_length=30, choices=FUNDING_CHOICES)
     mission_nature = models.CharField(max_length=50, choices=MISSION_NATURE_CHOICES)
+    year = models.PositiveIntegerField(default=datetime.now().year)
+
+    def clean(self):
+        if self.date_departure > self.date_arrival:
+            raise ValidationError("La date de départ ne peut pas être après la date de retour.")
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
 
     @property
     def nights_stayed(self):
         """Calculates the number of nights stayed based on date difference"""
         return (self.date_arrival - self.date_departure).days
 
-    
-    
     @property
     def meals_covered(self):
         """Calculates the number of meals covered based on mission duration."""
-    
         total_meals = 0
         current_date = self.date_departure  # Start from the departure date
-    
+
         while current_date <= self.date_arrival:
             if current_date == self.date_departure:  # Departure day
-                if self.time_departure.hour < 6:
-                    total_meals += 3  # Left early, all meals covered
+                if self.time_departure.hour < 9:
+                    total_meals += 3
                 elif self.time_departure.hour < 12:
-                    total_meals += 2  # Left before noon, lunch and dinner covered
+                    total_meals += 2
                 elif self.time_departure.hour < 18:
-                    total_meals += 1  # Left before evening, only dinner covered
+                    total_meals += 1
             elif current_date == self.date_arrival:  # Return day
                 if self.time_arrival.hour >= 19:
-                    total_meals += 3  # Returned after dinner, all meals covered
+                    total_meals += 3
                 elif self.time_arrival.hour >= 12:
-                    total_meals += 2  # Returned after lunch, breakfast and lunch covered
+                    total_meals += 2
                 elif self.time_arrival.hour >= 6:
-                    total_meals += 1  # Returned after breakfast, only breakfast covered
+                    total_meals += 1
             else:  # Full days in between
-                total_meals += 3  # Each full day covers 3 meals
-    
-            current_date += timedelta(days=1)  # Move to the next day
-    
+                total_meals += 3
+
+            current_date += timedelta(days=1)
+
         return total_meals
-    
         
         
 
@@ -98,7 +116,7 @@ class MissionPersonnel(models.Model):
     transport_payment = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     meal_payment = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     lodging_payment = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-
+    year = models.PositiveIntegerField(default=datetime.now().year)
     def is_south(self):
         """Determine if the mission's destination wilaya is in the south."""
         return self.mission.destination_wilaya.is_south  # Assuming a boolean field in Wilaya

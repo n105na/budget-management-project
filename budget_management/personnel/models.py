@@ -1,5 +1,5 @@
 from django.db import models
-
+from datetime import datetime
 
 
 class Wilaya(models.Model):
@@ -18,8 +18,9 @@ class Grade(models.Model):
         DRIVER = "Driver", "Driver"
 
     profession = models.CharField(max_length=20, choices=ProfessionChoices.choices)
-    name = models.CharField(max_length=50, unique=True)  #the grade name 
-
+    name = models.CharField(max_length=50)   
+    class Meta:
+        unique_together = ('profession', 'name')  
     def __str__(self):
         return f"{self.profession} - {self.name}"
 
@@ -37,7 +38,7 @@ class Personnel(models.Model):
     is_ccp_account = models.BooleanField(default=False)
     address = models.CharField(max_length=255, default="Unknown")
     wilaya = models.ForeignKey(Wilaya, on_delete=models.CASCADE, null=True, blank=True)
-
+    year = models.PositiveIntegerField(default=datetime.now().year)
     def __str__(self):
         return f"{self.name} ({self.profession})"
  

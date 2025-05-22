@@ -2,7 +2,7 @@ from django.contrib import admin
 from .models import Personnel, Grade, Wilaya
 
 class PersonnelAdmin(admin.ModelAdmin):
-    list_display = ('name', 'profession', 'grade', 'account_number', 'is_ccp_account', 'address','wilaya__name')
+    list_display = ('name', 'profession', 'grade', 'account_number', 'is_ccp_account', 'address','wilaya__name', 'year')
     search_fields = ('name', 'profession', 'grade__name')
     list_filter = ('grade', 'profession', 'is_ccp_account')
     ordering = ('name',)

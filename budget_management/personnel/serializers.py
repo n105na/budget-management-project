@@ -25,10 +25,11 @@ class PersonnelSerializer(serializers.ModelSerializer):
     class Meta:
         model = Personnel
         fields = [
-            "id", "name", "profession",
+            "id", "name", "profession", 
             "grade", "grade_id",       # show + allow choosing
             "account_number", "is_ccp_account", "address",
-            "wilaya", "wilaya_id"      # show + allow choosing
+            "wilaya", "wilaya_id",
+            "year"      # show + allow choosing
         ]
 
     def validate(self, data):

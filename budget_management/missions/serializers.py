@@ -4,12 +4,21 @@ from personnel.models import Personnel
 from .models import GradePayment
 from .models import Mission, MissionPersonnel
 
+from .models import Budget
+
+
+class BudgetSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Budget
+        fields = ['id', 'year', 'amount', 'added_on']
+        read_only_fields = ['id', 'added_on']
+
 class GradePaymentSerializer(serializers.ModelSerializer):
     grade_name = serializers.CharField(source="grade.name", read_only=True)
 
     class Meta:
         model = GradePayment
-        fields = ['id', 'meal_payment_north', 'meal_payment_south', 'lodging_payment_north', 'lodging_payment_south', 'grade', 'grade_name']
+        fields = ['id', 'meal_payment_north', 'meal_payment_south', 'lodging_payment_north', 'lodging_payment_south', 'grade', 'grade_name', 'year']
 
 
 
