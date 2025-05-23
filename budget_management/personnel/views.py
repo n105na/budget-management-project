@@ -6,12 +6,16 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import OrderingFilter  
+from users.permissions2 import IsViewer, IsEditor 
+
 
 
 class PersonnelViewSet(viewsets.ModelViewSet):
     queryset = Personnel.objects.all()
     serializer_class = PersonnelSerializer
     permission_classes = [IsAuthenticated]
+    permission_classes = [IsEditor]
+    permission_classes = [IsViewer]
     
     filter_backends = [DjangoFilterBackend, OrderingFilter]
     
@@ -34,6 +38,8 @@ class GradeViewSet(viewsets.ModelViewSet):
     queryset = Grade.objects.all()
     serializer_class = GradeSerializer
     permission_classes = [IsAuthenticated]
+    permission_classes = [IsEditor]
+    permission_classes = [IsViewer]
 
     @action(detail=False, methods=['get'])
     def by_profession(self, request):
@@ -52,4 +58,6 @@ class WilayaViewSet(viewsets.ModelViewSet):
     queryset = Wilaya.objects.all()
     serializer_class = WilayaSerializer
     permission_classes = [IsAuthenticated]
+    permission_classes = [IsEditor]
+    permission_classes = [IsViewer]
     

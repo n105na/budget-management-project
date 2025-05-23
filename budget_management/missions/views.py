@@ -12,7 +12,7 @@ from .models import GradePayment, Mission, MissionPersonnel, Budget
 from .serializers import GradePaymentSerializer, MissionSerializer, MissionPersonnelSerializer, BudgetSerializer
 from decimal import Decimal
 from .permissions import IsDashboardViewer
-
+from users.permissions2 import IsViewer, IsEditor
 
 class BudgetViewSet(viewsets.ModelViewSet):
     queryset = Budget.objects.all()
@@ -20,6 +20,8 @@ class BudgetViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend, OrderingFilter]
     filterset_fields = ['year']
     ordering_fields = ['added_on', 'amount']
+    permission_classes = [IsEditor]
+    
 
 class GradePaymentViewSet(viewsets.ModelViewSet):
     queryset = GradePayment.objects.all()
