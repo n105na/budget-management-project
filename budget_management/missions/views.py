@@ -11,7 +11,7 @@ from .filters import MissionFilter
 from .models import GradePayment, Mission, MissionPersonnel, Budget
 from .serializers import GradePaymentSerializer, MissionSerializer, MissionPersonnelSerializer, BudgetSerializer
 from decimal import Decimal
-
+from .permissions import IsDashboardViewer
 
 
 class BudgetViewSet(viewsets.ModelViewSet):
@@ -74,7 +74,7 @@ class MissionPersonnelViewSet(viewsets.ModelViewSet):
 
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated,IsDashboardViewer])
 def dashboard_metrics(request):
     now = datetime.now()
     filter_type = request.query_params.get("filter", "this_year")
@@ -84,12 +84,14 @@ def dashboard_metrics(request):
         end = start + timedelta(days=6)
     elif filter_type == "this_month":
         start = now.replace(day=1)
-        end = (start.replace(month=start.month + 1, day=1) if start.month < 12 else start.replace(year=now.year + 1, month=1, day=1)) - timedelta(days=1)
+        end = (start.replace(month=start.month + 1, day=1)
+               if start.month < 12 else start.replace(year=now.year + 1, month=1, day=1)) - timedelta(days=1)
     elif filter_type == "this_quarter":
         quarter = (now.month - 1) // 3 + 1
         start_month = 3 * (quarter - 1) + 1
         start = now.replace(month=start_month, day=1)
-        end = (start.replace(month=start_month + 3, day=1) if quarter < 4 else start.replace(year=now.year + 1, month=1, day=1)) - timedelta(days=1)
+        end = (start.replace(month=start_month + 3, day=1)
+               if quarter < 4 else start.replace(year=now.year + 1, month=1, day=1)) - timedelta(days=1)
     else:  # "this_year"
         start = now.replace(month=1, day=1)
         end = now.replace(month=12, day=31)
@@ -102,8 +104,8 @@ def dashboard_metrics(request):
     total_missions = missions.count()
     total_participations = mission_personnel.count()
     unique_personnel = mission_personnel.values("personnel").distinct().count()
-   
-    total_spent = sum(Decimal(mp.total_payment) for mp in mission_personnel)
+
+    total_spent = sum(Decimal(mp.total_payment or 0) for mp in mission_personnel)
 
     # Filter all budget entries for the year
     budgets = Budget.objects.filter(year=now.year)
@@ -113,8 +115,8 @@ def dashboard_metrics(request):
         remaining_budget = total_budget - total_spent
         percent_used = (total_spent / total_budget) * 100
     else:
-        remaining_budget = None
-        percent_used = None
+        remaining_budget = Decimal("0.00")
+        percent_used = 0
 
     return Response({
         "filter": filter_type,
@@ -124,7 +126,10 @@ def dashboard_metrics(request):
         "total_participations": total_participations,
         "unique_personnel": unique_personnel,
         "total_spent": float(total_spent),
-        "budget_amount": float(total_budget) if total_budget else None,
+        "budget_amount": float(total_budget) if total_budget else 0,
         "remaining_budget": float(remaining_budget),
-        "percent_used": round(percent_used, 2) if percent_used is not None else None,
+        "percent_used": round(percent_used, 2),
+        "is_overspent": total_spent > total_budget if total_budget > 0 else None,
+        "warning": "Budget exceeded!" if total_spent > total_budget else None
+
     })
