@@ -4,6 +4,7 @@ import { jwtDecode } from "jwt-decode";
 import { fetchWithAuth } from '../utils/fetchWithAuth';
 import Personnels from '../../components/Personells';
 import { useNavigate } from 'react-router-dom';
+import Missions from '../../components/Missions';
 
 const MissionManager = () => {
 
@@ -148,7 +149,7 @@ const MissionManager = () => {
         }
 
         {selectedOption === "Missions" && 
-         <h1 className='text-3xl text-center'>{selectedOption}</h1>
+         <Missions userLoggedin = {user} />
         }
 
         {selectedOption === "Personnels" && 
@@ -156,7 +157,7 @@ const MissionManager = () => {
         }
 
         {selectedOption === "Grades" && 
-         <h1 className='text-3xl text-center'>{selectedOption}</h1>
+         <></>
         }
         {selectedOption === "Grade Payments" && 
          <h1 className='text-3xl text-center'>{selectedOption}</h1>

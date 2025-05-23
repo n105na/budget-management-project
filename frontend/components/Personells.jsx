@@ -19,7 +19,10 @@ const Personnels = (user) => {
     profession: '',
     grade: ''
   });
+
   const [error, setError] = useState(null);
+  const [sucess, setSucess] = useState(null);
+
   const API_URL = import.meta.env.VITE_API_URL;
   const [activeTab, setActiveTab] = useState("list");
   const [selectedPerson, setSelectedPerson] = useState(null);
@@ -47,7 +50,7 @@ const Personnels = (user) => {
         if (res.ok) {
           const data = await res.json();
           setGrades(data);
-          console.log("grades : ",data);
+          //console.log("grades : ",data);
           setError(null);
         } else {
           throw new Error('Failed to fetch grades');
@@ -74,7 +77,7 @@ const Personnels = (user) => {
         if (res.ok) {
           const data = await res.json();
           setWilayas(data);
-          console.log("wilaya : ",data);
+          //console.log("wilaya : ",data);
           setError(null);
         } else {
           throw new Error('Failed to fetch grades');
@@ -98,7 +101,7 @@ const Personnels = (user) => {
       });
       if (res.ok) {
         const data = await res.json();
-        console.log("personnels : ",data);
+        //console.log("personnels : ",data);
         setPersonnels(data);
         setError(null);
       } else {
@@ -113,7 +116,6 @@ const Personnels = (user) => {
   };
 
 
-  // Add new personnel
   const addPersonnel = async () => {
     if (!hasPermission) return;
 
@@ -124,18 +126,27 @@ const Personnels = (user) => {
         body: JSON.stringify(formData)
       });
 
-      if (!res.ok) throw new Error('Failed to add personnel');
-      
-      // Refresh personnel list
-      await fetchPersonnels();
-      setActiveTab("list");
-      resetForm();
-      setError(null);
+      if (res.ok) {
+        setSucess("Personnel added successfully");
+        setError(null);
+
+        await fetchPersonnels();
+        resetForm();
+        setTimeout(() => {
+          setSucess(null);
+          setActiveTab("list");
+        }, 2000);
+
+      } else {
+        throw new Error('Failed to add personnel');
+      }
+
     } catch (err) {
       setError("Failed to add personnel");
       console.error(err);
     }
   };
+
 
   function transformForPut(data) {
       return {
@@ -149,56 +160,67 @@ const Personnels = (user) => {
     };
   }
 
-  // Update personnel
   const updatePersonnel = async () => {
-    if (!hasPermission || !selectedPerson) return;
+  if (!hasPermission || !selectedPerson) return;
 
-    try {
-      const res = await fetchWithAuth(`${API_URL}/api/personnel/${selectedPerson.id}/`, {
-        method: "PATCH",
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      });
+  try {
+    const res = await fetchWithAuth(`${API_URL}/api/personnel/${selectedPerson.id}/`, {
+      method: "PATCH",
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formData)
+    });
 
-      if (!res.ok) throw new Error('Failed to update personnel');
-      
-      // Refresh personnel list
-      await fetchPersonnels();
-      setActiveTab("list");
-      setSelectedPerson(null);
-      resetForm();
+    if (res.ok) {
+      setSucess("Personnel updated successfully");
       setError(null);
-    } catch (err) {
-      setError("Failed to update personnel");
-      console.error(err);
-    }
-  };
+      await fetchPersonnels();
+      setTimeout(() => {
+        setSucess(null);
+        resetForm();
+        setActiveTab("list");
+        setSelectedPerson(null);
+      }, 2000);
 
-  // Delete personnel
+    } else {
+      throw new Error('Failed to update personnel');
+    }
+
+  } catch (err) {
+    setError("Failed to update personnel");
+    console.error(err);
+  }
+};
+
+
   const deletePersonnel = async (id) => {
-    if (!hasPermission) return;
+  if (!hasPermission) return;
+  if (!confirm('Are you sure you want to delete this personnel?')) return;
 
-    if (!confirm('Are you sure you want to delete this personnel?')) return;
+  try {
+    const res = await fetchWithAuth(`${API_URL}/api/personnel/${id}/`, {
+      method: "DELETE"
+    });
 
-    try {
-      const res = await fetchWithAuth(`${API_URL}/api/personnel/${id}/`, {
-        method: "DELETE"
-      });
-
-      if (!res.ok) throw new Error('Failed to delete personnel');
-      
-      // Refresh personnel list
-      await fetchPersonnels();
+    if (res.ok) {
+      setSucess("Personnel deleted successfully");
       setError(null);
-    } catch (err) {
-      setError("Failed to delete personnel");
-      console.error(err);
-    }
-  };
-useEffect(() => {
-console.log("formData : ",formData);
+      await fetchPersonnels();
 
-},[formData])
+      setTimeout(() => {
+        setSucess(null);
+      }, 2000);
+
+    } else {
+      throw new Error('Failed to delete personnel');
+    }
+
+  } catch (err) {
+    setError("Failed to delete personnel");
+    console.error(err);
+  }
+};
+
+
   // Handle edit button click
   const handleEdit = (personnelId) => {
     if (!hasPermission) return;
@@ -279,7 +301,7 @@ console.log("formData : ",formData);
     return personnels.filter(person => {
       const nameMatch = person.name.toLowerCase().includes(filters.name.toLowerCase());
       const professionMatch = filters.profession === '' || person.profession === filters.profession;
-      const gradeMatch = filters.grade === '' || person.grade.name === filters.grade;
+      const gradeMatch = filters.grade === '' || `${person.grade?.profession}-${person.grade?.name}` === filters.grade;
       
       return nameMatch && professionMatch && gradeMatch;
     });
@@ -334,14 +356,14 @@ console.log("formData : ",formData);
 
         {/* Grade Filter */}
         <select
-          name="grade_id"
+          name="grade"
           value={filters.grade}
           onChange={(e) => handleFilterChange('grade', e.target.value)}
           className="bg-gray-100 rounded-full px-4 py-2 text-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#00064d] transition-all duration-200 w-full md:w-auto"
         >
           <option value="">All Grades</option>
           {grades && grades.map((grade, key) => (
-            <option key={key} value={grade.id}>{grade.profession} - {grade.name}</option>
+            <option key={key} value={`${grade.profession}-${grade.name}`}>{grade.profession}-{grade.name}</option>
           ))}
         </select>
 
@@ -380,6 +402,13 @@ console.log("formData : ",formData);
         </div>
       )}
 
+      {/* sucess message */}
+      {sucess && (
+        <div className="mx-10 mb-4 bg-green-100 border-l-4 border-green-500 text-green-700 p-4">
+          <p>{sucess}</p>
+        </div>
+      )}
+
       {/* Main content area - switches between list, view, add, edit */}
       {loading && activeTab === "list" ? (
         <div className="flex justify-center items-center h-64">
@@ -408,7 +437,7 @@ console.log("formData : ",formData);
                       <div className="font-medium">#{personnel.id}</div>
                       
                       <div className="text-gray-500">Grade</div>
-                      <div className="font-medium">{personnel.profession}</div>
+                      <div className="font-medium">{personnel.grade.profession}-{personnel.grade.name}</div>
                       
                       <div className="text-gray-500">Wilaya</div>
                       <div className="font-medium">{personnel.wilaya?.name || personnel.address || 'N/A'}</div>
@@ -596,6 +625,7 @@ console.log("formData : ",formData);
                       onChange={handleChange}
                       className="w-full border rounded-lg p-2"
                     >
+                      <option value="">Select a Grade</option>
                       {grades && grades.map((grade,key) => {
                         return(
                           <option key={key} value={grade.id}>{grade.profession}-{grade.name}</option>
@@ -649,7 +679,6 @@ console.log("formData : ",formData);
                   </div>
                 </div>
               </div>
-
               <div className="mt-8 flex justify-end gap-4">
                 <button 
                   onClick={() => setActiveTab("list")}
