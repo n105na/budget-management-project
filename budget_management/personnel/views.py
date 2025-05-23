@@ -20,7 +20,7 @@ class PersonnelViewSet(viewsets.ModelViewSet):
         'name': ['icontains'],            # filter by partial name match
         'profession': ['exact'],          # exact match: Teacher, Worker...
         'grade': ['exact'],               # grade ID
-        'grade__name': ['icontains'],     # grade name contains
+        'grade__name': ['exact'],     # grade name contains
         'wilaya': ['exact'],              # wilaya ID
         'wilaya__name': ['icontains'],    # wilaya name contains
         'is_ccp_account': ['exact'],
