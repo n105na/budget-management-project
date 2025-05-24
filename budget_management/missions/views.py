@@ -9,10 +9,10 @@ from rest_framework.response import Response
 
 from .filters import MissionFilter
 from .models import GradePayment, Mission, MissionPersonnel, Budget
-from .serializers import GradePaymentSerializer, MissionSerializer, MissionPersonnelSerializer, BudgetSerializer
+from .serializers import GradePaymentSerializer, MissionSerializer, MissionPersonnelSerializer, BudgetSerializer, MissionWithPersonnelSerializer, MissionWithPersonnelCRUDSerializer
 from decimal import Decimal
 from .permissions import IsDashboardViewer
-
+from rest_framework import generics
 
 class BudgetViewSet(viewsets.ModelViewSet):
     queryset = Budget.objects.all()
@@ -133,3 +133,33 @@ def dashboard_metrics(request):
         "warning": "Budget exceeded!" if total_spent > total_budget else None
 
     })
+class GroupedMissionsView(generics.ListAPIView):
+    serializer_class = MissionWithPersonnelSerializer
+
+    def get_queryset(self):
+        return Mission.objects.all()
+class MissionViiewSet(viewsets.ModelViewSet):
+    queryset = Mission.objects.all()
+    filter_backends = [DjangoFilterBackend, OrderingFilter]
+    filterset_fields = {
+        'destination_name': ['exact'],
+        'transport_type': ['exact'],
+    }
+    filterset_class = MissionFilter
+    ordering_fields = ['destination_wilaya', 'transport_type']
+
+    def get_serializer_class(self):
+        if self.action in ['create', 'update', 'partial_update']:
+            return MissionWithPersonnelCRUDSerializer
+        elif self.action in ['list', 'retrieve']:
+            return MissionWithPersonnelSerializer
+        return MissionSerializer
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        filter_type = self.request.query_params.get('filter', None)
+        now = datetime.now()
+
+        # your existing filter logic here...
+
+        return queryset

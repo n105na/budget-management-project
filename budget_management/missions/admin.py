@@ -9,15 +9,24 @@ class GradePaymentAdmin(admin.ModelAdmin):
     list_filter = ("grade",)
 
 
-@admin.register(Mission)
+'''@admin.register(Mission)
 class MissionAdmin(admin.ModelAdmin):
     list_display = ("mission_nature", "destination_wilaya", "transport_type", "funding_type", "date_departure", "date_arrival","year")
     list_filter = ("transport_type", "funding_type", "mission_nature", "destination_wilaya")
     search_fields = ("mission_nature", "destination_wilaya__name")
 
-
-@admin.register(MissionPersonnel)
+'''
+'''@admin.register(MissionPersonnel)
 class MissionPersonnelAdmin(admin.ModelAdmin):
     list_display = ("personnel", "mission", "transport_payment", "meal_payment", "lodging_payment", "total_payment","year")
     list_filter = ("mission__funding_type", "mission__destination_wilaya", "personnel__grade")
     search_fields = ("personnel__name", "mission__mission_nature", "mission__destination_wilaya__name")
+'''
+
+class MissionPersonnelInline(admin.TabularInline):
+    model = MissionPersonnel
+    extra = 1
+
+@admin.register(Mission)
+class MissionAdmin(admin.ModelAdmin):
+    inlines = [MissionPersonnelInline]
