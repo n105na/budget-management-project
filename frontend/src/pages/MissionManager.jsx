@@ -1,13 +1,15 @@
-import { Menu, Home, DollarSign, Medal, BarChart3, Settings, MapPin, Users, BadgeCheck, Search, Plus, LogOut } from 'lucide-react';
+import { Menu, Home, DollarSign, Medal, BarChart3, Settings, MapPin, Users, BadgeCheck, Search, Plus, LogOut, User } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { jwtDecode } from "jwt-decode";
 import { fetchWithAuth } from '../utils/fetchWithAuth';
 import Personnels from '../../components/Personells';
 import { useNavigate } from 'react-router-dom';
 import Missions from '../../components/Missions';
+import Willaya from '../../components/Willaya';
+import Grades from '../../components/Grades';
 
 const MissionManager = () => {
-
+  const [userTab,setUserTab] = useState(false)
   const navigate = useNavigate();
   const [selectedOption,setSelectedOption] = useState('Dashboard')
   const [user,setUser] = useState("")
@@ -127,25 +129,55 @@ const MissionManager = () => {
       </div>
 
       <div className="h-screen w-full">
+ 
+         {selectedOption  &&
+          <div className='flex items-center justify-between  bg-white px-6 py-4 rounded-xl shadow-md mb-6 '>
 
+            <p className='text-4xl font-extrabold text-[#00064d] mb-4 md:mb-0'>{selectedOption}</p>
+
+            {/*selectedOption !== "Dashboard" ?
+              <p className='text-4xl font-extrabold text-[#00064d] mb-4 md:mb-0'>{selectedOption}</p>
+             :
+             <p className='text-3xl  text-[#00064d]'>Welcome Back,<br/><span className='font-bold'>{user ? user.username : "sir"}</span></p>
+            */}
+ 
+            <div className='relative '>
+              <div 
+                onClick={() => setUserTab(!userTab)}
+                className=' flex justify-center items-center rounded-full w-14 h-14 bg-[#00064d] hover:cursor-pointer'>
+                <p className='font-bold text-2xl text-white'>{user.username?.charAt(0).toUpperCase()}</p>
+              </div>
+              
+              {userTab && 
+                <div className='absolute right-0 top-full mt-2 z-50 bg-[#00064d] shadow-xl p-6 rounded-lg w-64'>
+                  <ul className='space-y-2'>
+                    <li className="text-white font-semibold">{user.username}</li>
+                    <li className="text-white font-semibold">{user.role}</li>
+                    <li className="text-white font-semibold flex px-4 py-2 rounded-lg justify-center items-center gap-4 text-xl hover:cursor-pointer hover:bg-white hover:text-[#00064d]">
+                      <User/>
+                      Profile
+                      </li>
+                    <li 
+                      onClick={handleLogout}
+                      className="text-white font-semibold flex px-4 py-2 rounded-lg justify-center items-center gap-4 text-xl hover:cursor-pointer hover:bg-white hover:text-[#00064d]"
+                    >
+                      <LogOut />
+                      Log Out
+                    </li>
+                  </ul>
+                </div>
+              }
+
+            </div>
+            
+
+          </div>
+         }
         {selectedOption === "Dashboard" && 
-        <>
-        <div className='flex justify-between items-center pr-5'>
-          <h1 className='text-3xl p-8 text-[#00064d]'>Welcome Back,<br/><span className='font-bold'>{user ? user.username : "sir"}</span></h1>
-          <button 
-          onClick={handleLogout}
-            className="bg-red-500 text-white font-semibold flex px-4 py-2 rounded-lg justify-center items-center gap-4 text-xl hover:cursor-pointer transition-transform ease-in-out hover:scale-105"
-          >
-            <LogOut  color='white'/>
-            Disconnect
-          </button>
-        </div>
-         
-
-         
-          
-         
-        </>
+          <>
+            
+            
+          </>
         }
 
         {selectedOption === "Missions" && 
@@ -157,7 +189,7 @@ const MissionManager = () => {
         }
 
         {selectedOption === "Grades" && 
-         <></>
+         <Grades userLoggedin = {user} />
         }
         {selectedOption === "Grade Payments" && 
          <h1 className='text-3xl text-center'>{selectedOption}</h1>
@@ -168,7 +200,7 @@ const MissionManager = () => {
         }
 
         {selectedOption === "Wilaya" && 
-         <h1 className='text-3xl text-center'>{selectedOption}</h1>
+         <Willaya userLoggedin = {user}/>
         }
 
         {selectedOption === "Settings" && 
