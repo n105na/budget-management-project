@@ -3,7 +3,6 @@ from personnel.serializers import PersonnelSerializer
 from personnel.models import Personnel
 from .models import GradePayment
 from .models import Mission, MissionPersonnel
-
 from .models import Budget
 
 
@@ -13,13 +12,13 @@ class BudgetSerializer(serializers.ModelSerializer):
         fields = ['id', 'year', 'amount', 'added_on']
         read_only_fields = ['id', 'added_on']
 
+
 class GradePaymentSerializer(serializers.ModelSerializer):
     grade_name = serializers.CharField(source="grade.name", read_only=True)
 
     class Meta:
         model = GradePayment
         fields = ['id', 'meal_payment_north', 'meal_payment_south', 'lodging_payment_north', 'lodging_payment_south', 'grade', 'grade_name', 'year']
-
 
 
 class MissionSerializer(serializers.ModelSerializer):
@@ -56,18 +55,23 @@ class MissionPersonnelSerializer(serializers.ModelSerializer):
             "lodging_payment",
             "total_payment",
         ]
+
+
 class MissionAssignedPersonnelSerializer(serializers.ModelSerializer):
     personnel_detail = PersonnelSerializer(source='personnel', read_only=True)
 
     class Meta:
         model = MissionPersonnel
         fields = [
+            "id",
             "personnel_detail",
             "transport_payment",
             "meal_payment",
             "lodging_payment",
             "total_payment"
         ]
+
+
 class MissionWithPersonnelSerializer(serializers.ModelSerializer):
     destination_name = serializers.CharField(source="destination_wilaya.name", read_only=True)
     nights_stayed = serializers.IntegerField(read_only=True)
@@ -97,16 +101,35 @@ class MissionWithPersonnelSerializer(serializers.ModelSerializer):
         mission_personnel = MissionPersonnel.objects.filter(mission=mission)
         return MissionAssignedPersonnelSerializer(mission_personnel, many=True).data
 
-class MissionWithPersonnelCreateSerializer(serializers.ModelSerializer):
-    assigned_personnel_ids = serializers.ListField(
-        child=serializers.PrimaryKeyRelatedField(queryset=Personnel.objects.all()),
-        write_only=True
-    )
 
+# MAIN SERIALIZER FOR CREATE/UPDATE WITH PERSONNEL
+class MissionPersonnelNestedSerializer(serializers.ModelSerializer):
+    personnel_detail = PersonnelSerializer(source='personnel', read_only=True)
+
+    class Meta:
+        model = MissionPersonnel
+        fields = [
+            "id",
+            "personnel",
+            "personnel_detail",
+            "transport_payment",
+            "meal_payment",
+            "lodging_payment",
+            "total_payment",
+        ]
+        read_only_fields = ["id", "transport_payment", "meal_payment", "lodging_payment", "total_payment"]
+
+
+class MissionWithPersonnelCRUDSerializer(serializers.ModelSerializer):
     destination_name = serializers.CharField(source="destination_wilaya.name", read_only=True)
     nights_stayed = serializers.IntegerField(read_only=True)
-    meals_covered = serializers.CharField(read_only=True)
-    assigned_personnel = serializers.SerializerMethodField(read_only=True)
+    meals_covered = serializers.IntegerField(read_only=True)  # Fixed: should be IntegerField
+    assigned_personnel_ids = serializers.ListField(
+        child=serializers.IntegerField(),  # Fixed: Use IntegerField instead of PrimaryKeyRelatedField
+        write_only=True,
+        required=False
+    )
+    assigned_personnel = MissionPersonnelNestedSerializer(many=True, read_only=True, source='missionpersonnel_set')
 
     class Meta:
         model = Mission
@@ -124,91 +147,80 @@ class MissionWithPersonnelCreateSerializer(serializers.ModelSerializer):
             "mission_nature",
             "year",
             "destination_wilaya",
-            "assigned_personnel_ids",  # input list of personnel ids
-            "assigned_personnel",      # output detailed data
-        ]
-
-    def create(self, validated_data):
-        personnel_ids = validated_data.pop('assigned_personnel_ids', [])
-        mission = Mission.objects.create(**validated_data)
-
-        # Create MissionPersonnel objects for each personnel assigned
-        for personnel in personnel_ids:
-            MissionPersonnel.objects.create(mission=mission, personnel=personnel)
-
-        return mission
-
-    def get_assigned_personnel(self, mission):
-        mission_personnel = MissionPersonnel.objects.filter(mission=mission)
-        return MissionAssignedPersonnelSerializer(mission_personnel, many=True).data
-#the one were testing now 
-from rest_framework import serializers
-from .models import Mission, MissionPersonnel
-from personnel.serializers import PersonnelSerializer
-
-class MissionPersonnelNestedSerializer(serializers.ModelSerializer):
-    personnel = serializers.PrimaryKeyRelatedField(queryset=Personnel.objects.all())
-
-    class Meta:
-        model = MissionPersonnel
-        fields = [
-            "id",
-            "personnel",
-            "transport_payment",
-            "meal_payment",
-            "lodging_payment",
-            "total_payment",
-        ]
-        read_only_fields = ["id"]
-
-class MissionWithPersonnelCRUDSerializer(serializers.ModelSerializer):
-    destination_name = serializers.CharField(source="destination_wilaya.name", read_only=True)
-    assigned_personnel = MissionPersonnelNestedSerializer(many=True)
-
-    class Meta:
-        model = Mission
-        fields = [
-            "id",
-            "destination_name",
-            "date_arrival",
-            "date_departure",
-            "transport_type",
-            "time_departure",
-            "time_arrival",
-            "funding_type",
-            "mission_nature",
-            "year",
-            "destination_wilaya",
+            "assigned_personnel_ids",
             "assigned_personnel",
         ]
 
+    def validate_assigned_personnel_ids(self, value):
+        """Validate that all personnel IDs exist"""
+        if value:
+            existing_ids = Personnel.objects.filter(id__in=value).values_list('id', flat=True)
+            invalid_ids = set(value) - set(existing_ids)
+            if invalid_ids:
+                raise serializers.ValidationError(f"Personnel with IDs {list(invalid_ids)} do not exist.")
+        return value
+
     def create(self, validated_data):
-        personnel_data = validated_data.pop('assigned_personnel')
+        # Extract personnel IDs and remove from validated data
+        personnel_ids = validated_data.pop('assigned_personnel_ids', [])
+        
+        # Create the mission
         mission = Mission.objects.create(**validated_data)
-        for p_data in personnel_data:
-            MissionPersonnel.objects.create(mission=mission, **p_data)
+        
+        # Create MissionPersonnel entries for each personnel ID
+        mission_personnel_objects = []
+        for personnel_id in personnel_ids:
+            try:
+                personnel = Personnel.objects.get(id=personnel_id)
+                
+                # Check if GradePayment exists for this personnel's grade
+                from .models import GradePayment
+                grade_payment_exists = GradePayment.objects.filter(
+                    grade=personnel.grade
+                ).exists()
+                
+                if not grade_payment_exists:
+                    mission.delete()
+                    raise serializers.ValidationError(
+                        f"No payment configuration found for grade '{personnel.grade.name}'. "
+                        f"Please create a GradePayment entry for this grade first."
+                    )
+                
+                mission_personnel_objects.append(
+                    MissionPersonnel.objects.create(mission=mission, personnel=personnel)
+                )
+            except Personnel.DoesNotExist:
+                # Clean up if something goes wrong
+                mission.delete()
+                raise serializers.ValidationError(f"Personnel with ID {personnel_id} does not exist.")
+        
         return mission
 
     def update(self, instance, validated_data):
-        personnel_data = validated_data.pop('assigned_personnel')
+        # Extract personnel IDs and remove from validated data
+        personnel_ids = validated_data.pop('assigned_personnel_ids', None)
         
+        # Update mission fields
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
 
-        existing_personnel = {mp.id: mp for mp in instance.missionpersonnel_set.all()}
-        for p_data in personnel_data:
-            mp_id = p_data.get('id')
-            if mp_id and mp_id in existing_personnel:
-                mp = existing_personnel.pop(mp_id)
-                for attr, value in p_data.items():
-                    if attr != 'id':
-                        setattr(mp, attr, value)
-                mp.save()
-            else:
-                MissionPersonnel.objects.create(mission=instance, **p_data)
+        # If personnel_ids is provided, update the assigned personnel
+        if personnel_ids is not None:
+            # Get current MissionPersonnel entries
+            existing_personnel_ids = set(instance.missionpersonnel_set.values_list('personnel_id', flat=True))
+            new_personnel_ids = set(personnel_ids)
 
-        for mp in existing_personnel.values():
-            mp.delete()
+            # Remove personnel no longer assigned
+            for personnel_id in existing_personnel_ids - new_personnel_ids:
+                instance.missionpersonnel_set.filter(personnel_id=personnel_id).delete()
+
+            # Add new personnel
+            for personnel_id in new_personnel_ids - existing_personnel_ids:
+                try:
+                    personnel = Personnel.objects.get(id=personnel_id)
+                    MissionPersonnel.objects.create(mission=instance, personnel=personnel)
+                except Personnel.DoesNotExist:
+                    raise serializers.ValidationError(f"Personnel with ID {personnel_id} does not exist.")
 
         return instance

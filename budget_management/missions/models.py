@@ -31,9 +31,6 @@ class Budget(models.Model):
         return f"{self.year} - {self.amount} DZD added on {self.added_on}"
 
 
-
-
-
 class Mission(models.Model):
     TRANSPORT_CHOICES = [
         ('Personal Car', 'Voiture personnelle'),
@@ -73,7 +70,6 @@ class Mission(models.Model):
         self.full_clean()
         super().save(*args, **kwargs)
 
-
     @property
     def nights_stayed(self):
         """Calculates the number of nights stayed based on date difference"""
@@ -106,8 +102,6 @@ class Mission(models.Model):
             current_date += timedelta(days=1)
 
         return total_meals
-        
-        
 
 
 class MissionPersonnel(models.Model):
@@ -117,42 +111,59 @@ class MissionPersonnel(models.Model):
     meal_payment = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     lodging_payment = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     year = models.PositiveIntegerField(default=datetime.now().year)
+    
     def is_south(self):
         """Determine if the mission's destination wilaya is in the south."""
         return self.mission.destination_wilaya.is_south  # Assuming a boolean field in Wilaya
 
     def get_grade_payment(self):
         """Retrieve the correct GradePayment entry for the personnel's grade."""
-        return GradePayment.objects.get(grade=self.personnel.grade)
+        try:
+            return GradePayment.objects.get(
+                grade=self.personnel.grade, 
+                year=self.mission.year
+            )
+        except GradePayment.DoesNotExist:
+            # Try to get the most recent GradePayment for this grade
+            try:
+                return GradePayment.objects.filter(
+                    grade=self.personnel.grade
+                ).order_by('-year').first()
+            except Exception:
+                # If still no GradePayment exists, return None
+                return None
 
     def calculate_meal_payment(self):
         """Calculate meal payment based on the wilaya location (north/south)."""
         grade_payment = self.get_grade_payment()
+        if not grade_payment:
+            # Return 0 if no grade payment is configured
+            return Decimal('0')
+        
         meal_price = grade_payment.meal_payment_south if self.is_south() else grade_payment.meal_payment_north
         return self.mission.meals_covered * meal_price
-
-    
 
     def calculate_transport_payment(self):
         """Calculate transport payment based on the distance stored in WilayaDistance."""
         if self.mission.transport_type.lower() == "personal car":
             # Fetch the distance from WilayaDistance
             distance_entry = WilayaDistance.objects.filter(
-                  
                 wilaya_to=self.mission.destination_wilaya   # The destination wilaya
             ).first()
 
             if distance_entry:
-                return Decimal(distance_entry.distance_km )* Decimal('1')  # For now, we use 1 DA per km
+                return Decimal(distance_entry.distance_km) * Decimal('1')  # For now, we use 1 DA per km
             else:
                 return Decimal('0')  # No distance found, return 0
         return Decimal('0')  # If not a personal car, no transport payment
 
-
-
     def calculate_lodging_payment(self):
         """Calculate lodging payment based on the wilaya location (north/south)."""
         grade_payment = self.get_grade_payment()
+        if not grade_payment:
+            # Return 0 if no grade payment is configured
+            return Decimal('0')
+        
         lodging_price = grade_payment.lodging_payment_south if self.is_south() else grade_payment.lodging_payment_north
         return self.mission.nights_stayed * lodging_price
 
@@ -174,5 +185,6 @@ class MissionPersonnel(models.Model):
 
     def __str__(self):
         return f"{self.personnel.name} - {self.mission.mission_nature} ({self.total_payment} DA)"
+    
     class Meta:
         unique_together = ('personnel', 'mission')

@@ -9,10 +9,18 @@ from rest_framework.response import Response
 
 from .filters import MissionFilter
 from .models import GradePayment, Mission, MissionPersonnel, Budget
-from .serializers import GradePaymentSerializer, MissionSerializer, MissionPersonnelSerializer, BudgetSerializer, MissionWithPersonnelSerializer, MissionWithPersonnelCRUDSerializer
+from .serializers import (
+    GradePaymentSerializer, 
+    MissionSerializer, 
+    MissionPersonnelSerializer, 
+    BudgetSerializer, 
+    MissionWithPersonnelSerializer, 
+    MissionWithPersonnelCRUDSerializer
+)
 from decimal import Decimal
 from .permissions import IsDashboardViewer
 from rest_framework import generics
+
 
 class BudgetViewSet(viewsets.ModelViewSet):
     queryset = Budget.objects.all()
@@ -20,6 +28,7 @@ class BudgetViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend, OrderingFilter]
     filterset_fields = ['year']
     ordering_fields = ['added_on', 'amount']
+
 
 class GradePaymentViewSet(viewsets.ModelViewSet):
     queryset = GradePayment.objects.all()
@@ -131,22 +140,32 @@ def dashboard_metrics(request):
         "percent_used": round(percent_used, 2),
         "is_overspent": total_spent > total_budget if total_budget > 0 else None,
         "warning": "Budget exceeded!" if total_spent > total_budget else None
-
     })
+
+
 class GroupedMissionsView(generics.ListAPIView):
     serializer_class = MissionWithPersonnelSerializer
 
     def get_queryset(self):
         return Mission.objects.all()
-class MissionViiewSet(viewsets.ModelViewSet):
-    queryset = Mission.objects.all()
+
+
+# MAIN VIEWSET FOR MISSION WITH PERSONNEL CRUD
+class MissionWithPersonnelViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for creating, updating, and retrieving missions with personnel assignments.
+    This allows creating a mission and assigning personnel in a single API call.
+    """
+    queryset = Mission.objects.all().select_related('destination_wilaya').prefetch_related('missionpersonnel_set__personnel')
     filter_backends = [DjangoFilterBackend, OrderingFilter]
     filterset_fields = {
-        'destination_name': ['exact'],
         'transport_type': ['exact'],
+        'funding_type': ['exact'],
+        'mission_nature': ['exact'],
+        'year': ['exact'],
     }
     filterset_class = MissionFilter
-    ordering_fields = ['destination_wilaya', 'transport_type']
+    ordering_fields = ['date_departure', 'date_arrival', 'destination_wilaya']
 
     def get_serializer_class(self):
         if self.action in ['create', 'update', 'partial_update']:
@@ -160,6 +179,26 @@ class MissionViiewSet(viewsets.ModelViewSet):
         filter_type = self.request.query_params.get('filter', None)
         now = datetime.now()
 
-        # your existing filter logic here...
+        if filter_type == 'this_week':
+            start = now - timedelta(days=now.weekday())
+            end = start + timedelta(days=6)
+            queryset = queryset.filter(date_departure__range=(start.date(), end.date()))
+
+        elif filter_type == 'this_month':
+            start = now.replace(day=1)
+            end = (start.replace(month=start.month + 1, day=1) if start.month < 12 else start.replace(year=start.year + 1, month=1, day=1)) - timedelta(days=1)
+            queryset = queryset.filter(date_departure__range=(start.date(), end.date()))
+
+        elif filter_type == 'this_quarter':
+            quarter = (now.month - 1) // 3 + 1
+            start_month = 3 * (quarter - 1) + 1
+            start = now.replace(month=start_month, day=1)
+            end = (start.replace(month=start_month + 3, day=1) if quarter < 4 else start.replace(year=now.year + 1, month=1, day=1)) - timedelta(days=1)
+            queryset = queryset.filter(date_departure__range=(start.date(), end.date()))
+
+        elif filter_type == 'this_year':
+            start = now.replace(month=1, day=1)
+            end = now.replace(month=12, day=31)
+            queryset = queryset.filter(date_departure__range=(start.date(), end.date()))
 
         return queryset
