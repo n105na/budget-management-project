@@ -267,14 +267,14 @@ const Grades = (user) => {
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
                     <button
                       onClick={() => startEdit(grade)}
-                      className="text-blue-600 hover:text-blue-900 p-1 rounded transition-colors"
+                      className="text-blue-600 hover:text-white bg-white hover:bg-blue-600 p-1 rounded transition-colors hover:cursor-pointer"
                       title="Edit"
                     >
                       <Edit3 size={16} />
                     </button>
                     <button
                       onClick={() => handleDeleteGrade(grade.id)}
-                      className="text-red-600 hover:text-red-900 p-1 rounded transition-colors"
+                      className="text-red-600 hover:text-white bg-white  hover:bg-red-600 p-1 rounded transition-colors hover:cursor-pointer"
                       title="Delete"
                     >
                       <Trash2 size={16} />
