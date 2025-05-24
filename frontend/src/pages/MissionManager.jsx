@@ -88,11 +88,20 @@ const MissionManager = () => {
             <Medal className="w-6 h-6" />
             Missions
           </li>
+          
           <li 
           onClick={() => setSelectedOption('Personnels')}
           className={`flex items-center gap-8 text-lg hover:bg-[#870839] hover:text-white p-2 cursor-pointer rounded-[4px] ${selectedOption === "Personnels" ? "bg-[#870839] text-white" : ""}`}>
             <Users className="w-6 h-6" />
             Personnels
+          </li>
+          <li 
+          onClick={() => setSelectedOption('Missions / Personnels')}
+          className={`flex items-center gap-8 text-lg hover:bg-[#870839] hover:text-white p-2 cursor-pointer rounded-[4px] ${selectedOption === "Missions / Personnels" ? "bg-[#870839] text-white" : ""}`}>
+            <div className='flex -mr-6'>
+              <Medal className="w-6 h-6" /><Users className="w-6 h-6" />
+            </div>
+            Missions / Personnels
           </li>
           <li 
           onClick={() => setSelectedOption('Grades')}
@@ -186,6 +195,13 @@ const MissionManager = () => {
 
         {selectedOption === "Personnels" && 
          <Personnels userLoggedin = {user} />
+        }
+        
+        {selectedOption === "Missions / Personnels" && 
+          <>
+            
+            
+          </>
         }
 
         {selectedOption === "Grades" && 
