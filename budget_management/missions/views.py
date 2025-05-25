@@ -6,6 +6,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.filters import OrderingFilter
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from users.permissions import RoleBasedPermission 
 
 from .filters import MissionFilter
 from .models import GradePayment, Mission, MissionPersonnel, Budget
@@ -28,16 +29,18 @@ class BudgetViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend, OrderingFilter]
     filterset_fields = ['year']
     ordering_fields = ['added_on', 'amount']
-
+    permission_classes = [IsAuthenticated, RoleBasedPermission]
 
 class GradePaymentViewSet(viewsets.ModelViewSet):
     queryset = GradePayment.objects.all()
     serializer_class = GradePaymentSerializer
-
+    permission_classes = [IsAuthenticated, RoleBasedPermission]
+    
 
 class MissionViewSet(viewsets.ModelViewSet):
     queryset = Mission.objects.all()
     serializer_class = MissionSerializer
+    permission_classes = [IsAuthenticated, RoleBasedPermission]
 
     filter_backends = [DjangoFilterBackend, OrderingFilter]
     filterset_fields = {
