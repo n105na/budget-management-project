@@ -59,6 +59,7 @@ class GradeViewSet(viewsets.ModelViewSet):
             return Response(serializer.data)
         return Response({"error": "Profession is required"}, status=400)
 
+
 class WilayaViewSet(viewsets.ModelViewSet):
     queryset = Wilaya.objects.all()
     serializer_class = WilayaSerializer

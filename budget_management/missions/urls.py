@@ -13,8 +13,8 @@ from .views import (
 router = DefaultRouter()
 router.register(r'grade-payment', GradePaymentViewSet, basename='gradepayment')
 router.register(r'mission', MissionViewSet)  # Basic mission CRUD (without personnel assignment)
-router.register(r'mission-with-personnel', MissionWithPersonnelViewSet, basename='personnel')  # Mission CRUD with personnel assignment
-router.register(r'mission-personnel', MissionPersonnelViewSet,basename='mission-with-personnel')
+router.register(r'mission-personnel', MissionWithPersonnelViewSet, basename='personnel')  # Mission CRUD with personnel assignment
+router.register(r'mission-with-personnel', MissionPersonnelViewSet,basename='mission-with-personnel')
 router.register(r'budgets', BudgetViewSet)
 
 urlpatterns = [

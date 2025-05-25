@@ -33,14 +33,14 @@ class MissionSerializer(serializers.ModelSerializer):
 
 class MissionPersonnelSerializer(serializers.ModelSerializer):
     mission = serializers.PrimaryKeyRelatedField(
-        queryset=Mission.objects.all(), many=True, write_only=True
+        queryset=Mission.objects.all(), write_only=True
     )
     personnel = serializers.PrimaryKeyRelatedField(
-        queryset=Personnel.objects.all(), many=True , write_only=True
+        queryset=Personnel.objects.all(), write_only=True
     )
 
     mission_detail = MissionSerializer(source='mission', read_only=True)
-    personnel_detail = PersonnelSerializer(source='personnel', read_only=True)
+    personnel_details = PersonnelSerializer(source='personnel', read_only=True)
 
     class Meta:
         model = MissionPersonnel
@@ -49,7 +49,7 @@ class MissionPersonnelSerializer(serializers.ModelSerializer):
             "mission",         # for write
             "personnel",       # for write
             "mission_detail",  # for read
-            "personnel_detail",# for read
+            "personnel_details",# for read
             "transport_payment",
             "meal_payment",
             "lodging_payment",
@@ -58,13 +58,13 @@ class MissionPersonnelSerializer(serializers.ModelSerializer):
 
 
 class MissionAssignedPersonnelSerializer(serializers.ModelSerializer):
-    personnel_detail = PersonnelSerializer(source='personnel', read_only=True)
+    personnel_details = PersonnelSerializer(source='personnel', read_only=True)
 
     class Meta:
         model = MissionPersonnel
         fields = [
             "id",
-            "personnel_detail",
+            "personnel_details",
             "transport_payment",
             "meal_payment",
             "lodging_payment",
@@ -76,7 +76,7 @@ class MissionWithPersonnelSerializer(serializers.ModelSerializer):
     destination_name = serializers.CharField(source="destination_wilaya.name", read_only=True)
     nights_stayed = serializers.IntegerField(read_only=True)
     meals_covered = serializers.CharField(read_only=True)
-    assigned_personnel = serializers.SerializerMethodField()
+    personnel_details = serializers.SerializerMethodField()
 
     class Meta:
         model = Mission
@@ -94,24 +94,25 @@ class MissionWithPersonnelSerializer(serializers.ModelSerializer):
             "mission_nature",
             "year",
             "destination_wilaya",
-            "assigned_personnel",
+            "personnel_details",
         ]
 
-    def get_assigned_personnel(self, mission):
+    def get_personnel_details(self, mission):
         mission_personnel = MissionPersonnel.objects.filter(mission=mission)
         return MissionAssignedPersonnelSerializer(mission_personnel, many=True).data
 
 
+
 # MAIN SERIALIZER FOR CREATE/UPDATE WITH PERSONNEL
 class MissionPersonnelNestedSerializer(serializers.ModelSerializer):
-    personnel_detail = PersonnelSerializer(source='personnel', read_only=True)
+    personnel_details = PersonnelSerializer(source='personnel', read_only=True)
 
     class Meta:
         model = MissionPersonnel
         fields = [
             "id",
             "personnel",
-            "personnel_detail",
+            "personnel_details",
             "transport_payment",
             "meal_payment",
             "lodging_payment",
@@ -124,12 +125,12 @@ class MissionWithPersonnelCRUDSerializer(serializers.ModelSerializer):
     destination_name = serializers.CharField(source="destination_wilaya.name", read_only=True)
     nights_stayed = serializers.IntegerField(read_only=True)
     meals_covered = serializers.IntegerField(read_only=True)  # Fixed: should be IntegerField
-    assigned_personnel_ids = serializers.ListField(
+    personnel_detail = serializers.ListField(
         child=serializers.IntegerField(),  # Fixed: Use IntegerField instead of PrimaryKeyRelatedField
         write_only=True,
         required=False
     )
-    assigned_personnel = MissionPersonnelNestedSerializer(many=True, read_only=True, source='missionpersonnel_set')
+    personnel_details = MissionPersonnelNestedSerializer(many=True, read_only=True, source='missionpersonnel_set')
 
     class Meta:
         model = Mission
@@ -147,11 +148,11 @@ class MissionWithPersonnelCRUDSerializer(serializers.ModelSerializer):
             "mission_nature",
             "year",
             "destination_wilaya",
-            "assigned_personnel_ids",
-            "assigned_personnel",
+            "personnel_detail",
+            "personnel_details",
         ]
 
-    def validate_assigned_personnel_ids(self, value):
+    def validate_personnel_detail(self, value):
         """Validate that all personnel IDs exist"""
         if value:
             existing_ids = Personnel.objects.filter(id__in=value).values_list('id', flat=True)
@@ -162,7 +163,7 @@ class MissionWithPersonnelCRUDSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         # Extract personnel IDs and remove from validated data
-        personnel_ids = validated_data.pop('assigned_personnel_ids', [])
+        personnel_ids = validated_data.pop('personnel_detail', [])
         
         # Create the mission
         mission = Mission.objects.create(**validated_data)
@@ -198,7 +199,7 @@ class MissionWithPersonnelCRUDSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         # Extract personnel IDs and remove from validated data
-        personnel_ids = validated_data.pop('assigned_personnel_ids', None)
+        personnel_ids = validated_data.pop('personnel_detail', None)
         
         # Update mission fields
         for attr, value in validated_data.items():
