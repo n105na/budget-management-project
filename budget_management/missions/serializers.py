@@ -33,10 +33,10 @@ class MissionSerializer(serializers.ModelSerializer):
 
 class MissionPersonnelSerializer(serializers.ModelSerializer):
     mission = serializers.PrimaryKeyRelatedField(
-        queryset=Mission.objects.all(), many=True, write_only=True
+        queryset=Mission.objects.all(), write_only=True
     )
     personnel = serializers.PrimaryKeyRelatedField(
-        queryset=Personnel.objects.all(), many=True , write_only=True
+        queryset=Personnel.objects.all(), write_only=True
     )
 
     mission_detail = MissionSerializer(source='mission', read_only=True)
@@ -100,6 +100,7 @@ class MissionWithPersonnelSerializer(serializers.ModelSerializer):
     def get_personnel_details(self, mission):
         mission_personnel = MissionPersonnel.objects.filter(mission=mission)
         return MissionAssignedPersonnelSerializer(mission_personnel, many=True).data
+
 
 
 # MAIN SERIALIZER FOR CREATE/UPDATE WITH PERSONNEL
