@@ -7,7 +7,9 @@ from .views import (
     dashboard_metrics, 
     BudgetViewSet, 
     GroupedMissionsView, 
-    MissionWithPersonnelViewSet  # This is the main one for creating missions with personnel
+    MissionWithPersonnelViewSet, # This is the main one for creating missions with personnel
+    GeneratePersonnelReportView,
+    GenerateMissionReportView
 )
 
 router = DefaultRouter()
@@ -20,5 +22,10 @@ router.register(r'budgets', BudgetViewSet)
 urlpatterns = [
     path('', include(router.urls)),
     path('dashboard/', dashboard_metrics, name='dashboard_metrics'),
+    path('personnel-report/<int:id>/', GeneratePersonnelReportView.as_view(), name='generate-personnel-report'),
+    path('personnel-report/<int:id>/<int:year>/', GeneratePersonnelReportView.as_view(), name='generate-personnel-report-year'),
+    path('mission-report/<int:mission_id>/', GenerateMissionReportView.as_view(), name='generate-mission-report'),
+
     # path('missions/', GroupedMissionsView.as_view(), name='missions'),
 ]
+

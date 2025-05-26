@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import GradePayment, Mission, MissionPersonnel
+from .models import GradePayment, Mission, MissionPersonnel, Budget
 
 
 @admin.register(GradePayment)
@@ -16,12 +16,12 @@ class MissionAdmin(admin.ModelAdmin):
     search_fields = ("mission_nature", "destination_wilaya__name")
 
 '''
-'''@admin.register(MissionPersonnel)
+@admin.register(MissionPersonnel)
 class MissionPersonnelAdmin(admin.ModelAdmin):
     list_display = ("personnel", "mission", "transport_payment", "meal_payment", "lodging_payment", "total_payment","year")
     list_filter = ("mission__funding_type", "mission__destination_wilaya", "personnel__grade")
     search_fields = ("personnel__name", "mission__mission_nature", "mission__destination_wilaya__name")
-'''
+
 
 class MissionPersonnelInline(admin.TabularInline):
     model = MissionPersonnel
@@ -30,3 +30,7 @@ class MissionPersonnelInline(admin.TabularInline):
 @admin.register(Mission)
 class MissionAdmin(admin.ModelAdmin):
     inlines = [MissionPersonnelInline]
+
+@admin.register(Budget)
+class BudgetAdmin(admin.ModelAdmin):
+    list_display = ("id", "amount", "year", "added_on")
