@@ -16,6 +16,7 @@ urlpatterns = [
     path('update_user/<user_id>/', update_user, name='update_user'),
     path('delete_user/<user_id>/', delete_user, name='delete_user'), 
     path('change-password/',change_password, name='change-password'),
+    path('logout',logout_user, name='logout'),
     
     path('', include(router.urls)),
 ]
