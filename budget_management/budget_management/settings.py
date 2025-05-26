@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'personnel',
     'locations',
     'missions',
+    'rest_framework_simplejwt.token_blacklist',
 ]
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -61,6 +62,13 @@ REST_FRAMEWORK = {
         'rest_framework.filters.OrderingFilter'
     ]
 }
+SIMPLE_JWT = {
+    "BLACKLIST_AFTER_ROTATION": True,
+    "ROTATE_REFRESH_TOKENS": True,
+    "AUTH_TOKEN_CLASSES": ("rest_framework_simplejwt.tokens.AccessToken",),
+    "TOKEN_BLACKLIST_ENABLED": True,
+}
+
 from datetime import timedelta
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(days=2),

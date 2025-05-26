@@ -64,3 +64,5 @@ class WilayaViewSet(viewsets.ModelViewSet):
     queryset = Wilaya.objects.all()
     serializer_class = WilayaSerializer
     permission_classes = [IsAuthenticated, RoleBasedPermission] 
+
+
