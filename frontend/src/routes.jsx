@@ -1,15 +1,10 @@
 // routes.jsx
 import { Routes, Route } from 'react-router-dom';
 import Home from './pages/Home';
-import Budget from './pages/Budget';
-import Missions from './pages/Missions';
-import Engagement from './pages/Engagement';
-import Mandatement from './pages/Mandatement';
-import Reports from './pages/Reports';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import NotFound from './pages/NotFound';
 import MissionManager from './pages/MissionManager';
+import LogOut from './pages/Logout';
 
 const RoutesList = () => {
   return (
@@ -18,6 +13,7 @@ const RoutesList = () => {
 
       <Route path="/" element={<Home />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/logout" element={<LogOut />} />
       <Route path="/register" element={<Register />} />
       <Route path="/missionManager" element={<MissionManager />} />
       

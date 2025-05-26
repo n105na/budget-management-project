@@ -1,4 +1,4 @@
-import {Search, Plus, Edit, MapPin, X, Calendar, Clock, DollarSign, PlusIcon} from 'lucide-react'
+import {Search, Plus, Edit, MapPin, X, Calendar, Clock, DollarSign, PlusIcon, FileText} from 'lucide-react'
 import { fetchWithAuth } from '../src/utils/fetchWithAuth';
 import { useEffect, useState, useMemo } from 'react';
 
@@ -17,8 +17,8 @@ const Missions = (user) => {
   const [selectedMission, setSelectedMission] = useState(null);
   const [formData, setFormData] = useState({
     destination_name: "",
-    nights_stayed: "",
-    meals_covered: "",
+    //nights_stayed: "",
+    //meals_covered: "",
     date_arrival: "",
     date_departure: "",
     transport_type: "",
@@ -26,15 +26,13 @@ const Missions = (user) => {
     time_arrival: "",
     funding_type: "",
     mission_nature: "",
-    //year: new Date().getFullYear(),
     destination_wilaya: "",
-    personnel_detail: "",
-    //transport_payment: "",
-   // meal_payment: "",
-   // lodging_payment: "",
-  //  total_payment: ""
+    personnel_details: []
   });
+useEffect(() => {
+console.log("missions  broo:",formData);
 
+},[formData])
   // Check if user has permission to modify missions
   const hasPermission = user.userLoggedin.role === "Secretaire Generale" || user.userLoggedin.role === "Comptable";
 
@@ -48,6 +46,8 @@ const Missions = (user) => {
         });
         if (res.ok) {
           const data = await res.json();
+          
+          
           setWilayas(data);
           setError(null);
         } else {
@@ -97,6 +97,8 @@ const Missions = (user) => {
       });
       if (res.ok) {
         const data = await res.json();
+        console.log("missions: ",data);
+        
         setMissions(data);
         setError(null);
       } else {
@@ -140,23 +142,23 @@ const Missions = (user) => {
 
   function transformForPut(data) {
     return {
-      destination_name: data.mission_detail?.destination_name || "",
-      nights_stayed: data.mission_detail?.nights_stayed || "",
-      meals_covered: data.mission_detail?.meals_covered || "",
-      date_arrival: data.mission_detail?.date_arrival || "",
-      date_departure: data.mission_detail?.date_departure || "",
-      transport_type: data.mission_detail?.transport_type || "",
-      time_departure: data.mission_detail?.time_departure || "",
-      time_arrival: data.mission_detail?.time_arrival || "",
-      funding_type: data.mission_detail?.funding_type || "",
-      mission_nature: data.mission_detail?.mission_nature || "",
-      year: data.mission_detail?.year || new Date().getFullYear(),
-      destination_wilaya: data.mission_detail?.destination_wilaya || "",
-      personnel_detail: data.personnel_detail?.id || "",
-      transport_payment: data.transport_payment || "",
-      meal_payment: data.meal_payment || "",
-      lodging_payment: data.lodging_payment || "",
-      total_payment: data.total_payment || ""
+      destination_name: data.destination_name || "",
+      date_arrival: data.date_arrival || "",
+      date_departure: data.date_departure || "",
+      transport_type: data.transport_type || "",
+      time_departure: data.time_departure || "",
+      time_arrival: data.time_arrival || "",
+      funding_type: data.funding_type || "",
+      mission_nature: data.mission_nature || "",
+      //year: data.year || new Date().getFullYear(),
+      destination_wilaya: data.destination_wilaya || "",
+      personnel_details: data.personnel_details?.map(person => 
+        typeof person === 'object' ? person.personnel_details?.id : person
+      ) || []
+      //transport_payment: data.transport_payment || "",
+      //meal_payment: data.meal_payment || "",
+      //lodging_payment: data.lodging_payment || "",
+      //total_payment: data.total_payment || ""
     };
   }
 
@@ -240,8 +242,8 @@ const Missions = (user) => {
   const resetForm = () => {
     setFormData({
       destination_name: "",
-      nights_stayed: "",
-      meals_covered: "",
+      //nights_stayed: "",
+      //meals_covered: "",
       date_arrival: "",
       date_departure: "",
       transport_type: "",
@@ -251,7 +253,7 @@ const Missions = (user) => {
       mission_nature: "",
       //year: new Date().getFullYear(),
       destination_wilaya: "",
-      personnel_detail: "",
+      personnel_details: [],
      // transport_payment: "",
      // meal_payment: "",
      // lodging_payment: "",
@@ -268,13 +270,20 @@ const Missions = (user) => {
             destination_wilaya: code,
             destination_name: wilayaName   
         }));
+    } else if (name === "personnel_details") {
+        
+        const selectedOptions = Array.from(e.target.selectedOptions, option => parseInt(option.value));
+        setFormData(prevFormData => ({
+            ...prevFormData,
+            personnel_details: selectedOptions
+        }));
     } else {
         setFormData(prevFormData => ({
             ...prevFormData,
             [name]: value
         }));
     }
-};
+  };
 
   // Initial data fetch
   useEffect(() => {
@@ -338,7 +347,7 @@ const Missions = (user) => {
                 >
                   <div className="p-4">
                     <div className="flex justify-between items-center mb-2">
-                      <h3 className="text-lg font-semibold">{mission.personnel_detail?.name}</h3>
+                      <h3 className="text-lg font-semibold">{mission?.mission_nature || 'N/A'}</h3>
                       <div className="text-gray-600">
                         <MapPin className="w-5 h-5" />
                       </div>
@@ -349,13 +358,13 @@ const Missions = (user) => {
                       <div className="font-medium">#{mission.id}</div>
                       
                       <div className="text-gray-500">Destination</div>
-                      <div className="font-medium">{mission.mission_detail?.destination_name || 'N/A'}</div>
+                      <div className="font-medium">{mission?.destination_name || 'N/A'}</div>
                       
-                      <div className="text-gray-500">Mission</div>
-                      <div className="font-medium">{mission.mission_detail?.mission_nature || 'N/A'}</div>
+                      <div className="text-gray-500">Departure date</div>
+                      <div className="font-medium">{mission?.date_departure || 'N/A'}</div>
                       
-                      <div className="text-gray-500">Year</div>
-                      <div className="font-medium">{mission.mission_detail?.year || 'N/A'}</div>
+                      <div className="text-gray-500">arrival date</div>
+                      <div className="font-medium">{mission?.date_arrival || 'N/A'}</div>
                     </div>
                   </div>
                   
@@ -397,29 +406,26 @@ const Missions = (user) => {
                 <div>
                   <h3 className="text-lg font-semibold mb-4 border-b pb-2">Mission Information</h3>
                   <div className="space-y-3">
-                    <div>
-                      <span className="text-gray-500 block">Personnel</span>
-                      <span className="font-medium">{selectedMission.personnel_detail?.name}</span>
-                    </div>
+                   
                     <div>
                       <span className="text-gray-500 block">Destination</span>
-                      <span className="font-medium">{selectedMission.mission_detail?.destination_name}</span>
+                      <span className="font-medium">{selectedMission.destination_name}</span>
                     </div>
                     <div>
                       <span className="text-gray-500 block">Mission Nature</span>
-                      <span className="font-medium">{selectedMission.mission_detail?.mission_nature}</span>
+                      <span className="font-medium">{selectedMission.mission_nature}</span>
                     </div>
                     <div>
                       <span className="text-gray-500 block">Year</span>
-                      <span className="font-medium">{selectedMission.mission_detail?.year}</span>
+                      <span className="font-medium">{selectedMission.year}</span>
                     </div>
                     <div>
                       <span className="text-gray-500 block">Transport Type</span>
-                      <span className="font-medium">{selectedMission.mission_detail?.transport_type}</span>
+                      <span className="font-medium">{selectedMission.transport_type}</span>
                     </div>
                     <div>
                       <span className="text-gray-500 block">Funding Type</span>
-                      <span className="font-medium">{selectedMission.mission_detail?.funding_type}</span>
+                      <span className="font-medium">{selectedMission.funding_type}</span>
                     </div>
                   </div>
                 </div>
@@ -429,72 +435,71 @@ const Missions = (user) => {
                   <div className="space-y-3">
                     <div>
                       <span className="text-gray-500 block">Arrival Date</span>
-                      <span className="font-medium">{selectedMission.mission_detail?.date_arrival}</span>
+                      <span className="font-medium">{selectedMission.date_arrival}</span>
                     </div>
                     <div>
                       <span className="text-gray-500 block">Departure Date</span>
-                      <span className="font-medium">{selectedMission.mission_detail?.date_departure}</span>
+                      <span className="font-medium">{selectedMission.date_departure}</span>
                     </div>
                     <div>
                       <span className="text-gray-500 block">Departure Time</span>
-                      <span className="font-medium">{selectedMission.mission_detail?.time_departure}</span>
+                      <span className="font-medium">{selectedMission.time_departure}</span>
                     </div>
                     <div>
                       <span className="text-gray-500 block">Arrival Time</span>
-                      <span className="font-medium">{selectedMission.mission_detail?.time_arrival}</span>
+                      <span className="font-medium">{selectedMission.time_arrival}</span>
                     </div>
                     <div>
                       <span className="text-gray-500 block">Nights Stayed</span>
-                      <span className="font-medium">{selectedMission.mission_detail?.nights_stayed}</span>
+                      <span className="font-medium">{selectedMission.nights_stayed}</span>
                     </div>
                     <div>
                       <span className="text-gray-500 block">Meals Covered</span>
-                      <span className="font-medium">{selectedMission.mission_detail?.meals_covered}</span>
+                      <span className="font-medium">{selectedMission.meals_covered}</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="md:col-span-2">
+                <div className="col-span-2">
                   <h3 className="text-lg font-semibold mb-4 border-b pb-2">Personnels Information</h3>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div>
-                      <span className="text-gray-500 block">Personel Name</span>
-                      <span className="font-medium">{selectedMission.personnel_detail.name}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-500 block">Profession</span>
-                      <span className="font-medium">{selectedMission.personnel_detail.profession}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-500 block">grade</span>
-                      <span className="font-medium">{selectedMission.personnel_detail.grade.name}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-500 block">address</span>
-                      <span >{selectedMission.personnel_detail.address}</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="md:col-span-2">
-                  <h3 className="text-lg font-semibold mb-4 border-b pb-2">Payment Information</h3>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div>
-                      <span className="text-gray-500 block">Transport Payment</span>
-                      <span className="font-medium">{selectedMission.transport_payment} DA</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-500 block">Meal Payment</span>
-                      <span className="font-medium">{selectedMission.meal_payment} DA</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-500 block">Lodging Payment</span>
-                      <span className="font-medium">{selectedMission.lodging_payment} DA</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-500 block">Total Payment</span>
-                      <span className="font-bold text-[#00064d]">{selectedMission.total_payment} DA</span>
-                    </div>
-                  </div>
+                  {selectedMission.personnel_details?.map((person) => {
+                    return(
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 border-b py-6">
+                        <div>
+                          <span className="text-gray-500 block">Personel Name</span>
+                          <span className="font-medium">{person.personnel_details?.name}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-500 block">Profession</span>
+                          <span className="font-medium">{person.personnel_details?.profession}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-500 block">grade</span>
+                          <span className="font-medium">{person.personnel_details?.grade.name}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-500 block">address</span>
+                          <span >{person.personnel_details?.address}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-500 block">Transport Payment</span>
+                          <span className="font-medium">{person.transport_payment} DA</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-500 block">Meal Payment</span>
+                          <span className="font-medium">{person.meal_payment} DA</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-500 block">Lodging Payment</span>
+                          <span className="font-medium">{person.lodging_payment} DA</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-500 block">Total Payment</span>
+                          <span className="font-bold text-[#00064d]">{person.total_payment} DA</span>
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
 
@@ -508,6 +513,14 @@ const Missions = (user) => {
                 
                 {hasPermission && (
                   <>
+                    <button 
+                      onClick={() => {
+                      }}
+                      className=" flex items-center gap-2 text-white px-4 py-2 rounded-lg bg-gray-600 hover:cursor-pointer border shadow-2xl border-gray-200"
+                    >
+                      <FileText />
+                      PDF
+                    </button>
                     <button 
                       onClick={() => handleEdit(selectedMission.id)}
                       className="px-4 py-2 bg-[#870839] text-white rounded-lg flex items-center hover:cursor-pointer"
@@ -549,16 +562,18 @@ const Missions = (user) => {
                   <div>
                     <label className="block text-gray-700 mb-1">Personnel</label>
                     <select
-                      name="personnel_detail"
-                      value={formData.personnel_detail}
+                      name="personnel_details"
+                      value={formData.personnel_details}
                       onChange={handleChange}
                       className="w-full border rounded-lg p-2"
+                      multiple
+                      size="4"
                     >
-                      <option value="">Select Personnel</option>
                       {personnels && personnels.map((personnel, key) => (
                         <option key={key} value={personnel.id}>{personnel.name}-{personnel.profession}</option>
                       ))}
                     </select>
+                    <small className="text-gray-500">Hold Ctrl/Cmd to select multiple personnel</small>
                   </div>
                   
                   {/*<div>
@@ -589,15 +604,19 @@ const Missions = (user) => {
 
                   <div>
                     <label className="block text-gray-700 mb-1">Mission Nature</label>
-                    <input
-                      type="text"
+                    <select
                       name="mission_nature"
                       value={formData.mission_nature}
                       onChange={handleChange}
                       className="w-full border rounded-lg p-2"
-                    />
+                    >
+                      <option value="">Select mission nature</option>
+                      <option value="Thesis Discussion">Thesis Discussion</option>
+                      <option value="Forum">Forum</option>
+                      <option value="Administrative Task">Administrative Task</option>
+                      <option value="Other">Other</option>
+                    </select>
                   </div>
-
                   <div>
                     <label className="block text-gray-700 mb-1">Transport Type</label>
                     <select
@@ -607,28 +626,31 @@ const Missions = (user) => {
                       className="w-full border rounded-lg p-2"
                     >
                       <option value="">Select Transport</option>
+                      <option value="Personal Car">Personal Car</option>
                       <option value="Taxi">Taxi</option>
                       <option value="Bus">Bus</option>
-                      <option value="Train">Train</option>
-                      <option value="Plane">Plane</option>
+                      <option value="Faculty Driver">Faculty Driver</option>
+                      <option value="other">other</option>
                     </select>
                   </div>
 
                   <div>
                     <label className="block text-gray-700 mb-1">Funding Type</label>
-                    <input
+                    <select
                       type="text"
                       name="funding_type"
                       value={formData.funding_type}
                       onChange={handleChange}
                       className="w-full border rounded-lg p-2"
-                    />
+                    >
+                      <option value="">Select a funding type</option>
+                      <option value="100% Funded">100% Funded</option>
+                      <option value="25% Funding">25% Funding</option>
+                    </select>
                   </div>
                 </div>
                 
                 <div className="space-y-4">
-                 
-
                   <div>
                     <label className="block text-gray-700 mb-1">Arrival Date</label>
                     <input
@@ -673,27 +695,7 @@ const Missions = (user) => {
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-gray-700 mb-1">Nights Stayed</label>
-                    <input
-                      type="number"
-                      name="nights_stayed"
-                      value={formData.nights_stayed}
-                      onChange={handleChange}
-                      className="w-full border rounded-lg p-2"
-                    />
-                  </div>
-                </div>
-
-                <div className='space-y-4'>
-                  <label className="block text-gray-700 mb-1">Meals Covered</label>
-                  <input
-                    type="text"
-                    name="meals_covered"
-                    value={formData.meals_covered}
-                    onChange={handleChange}
-                    className="w-full border rounded-lg p-2"
-                  />
+                 
                 </div>
               </div> 
               <div className="mt-8 flex justify-end gap-4">
@@ -720,257 +722,182 @@ const Missions = (user) => {
             </div>  
           )} 
           {activeTab === "edit" && selectedMission && (
-            <div className="mx-auto max-w-4xl p-6 bg-white rounded-lg shadow-lg">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-[#00064d]">Edit Mission</h2>
-                <button 
-                  onClick={() => {
-                    setActiveTab("list");
-                    setSelectedMission(null);
-                    resetForm();
-                  }}
-                  className="text-gray-500 hover:text-gray-700 hover:cursor-pointer"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
+  <div className="mx-auto max-w-4xl p-6 bg-white rounded-lg shadow-lg">
+    <div className="flex justify-between items-center mb-6">
+      <h2 className="text-2xl font-bold text-[#00064d]">Edit Mission</h2>
+      <button 
+        onClick={() => {
+          setActiveTab("list");
+          setSelectedMission(null);
+          resetForm();
+        }}
+        className="text-gray-500 hover:text-gray-700 hover:cursor-pointer"
+      >
+        <X className="w-6 h-6" />
+      </button>
+    </div>
 
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-gray-700 mb-1">Personnel</label>
-                    <select
-                      name="personnel_detail"
-                      value={formData.personnel_detail}
-                      onChange={handleChange}
-                      className="w-full border rounded-lg p-2"
-                      disabled={!hasPermission}
-                    >
-                      <option value="">Select Personnel</option>
-                      {personnels && personnels.map((personnel, key) => (
-                        <option key={key} value={personnel.id}>{personnel.name}-{personnel.profession}</option>
-                      ))}
-                    </select>
-                  </div>
-                  
-                 {/* <div>
-                    <label className="block text-gray-700 mb-1">Destination Name</label>
-                    <input
-                      type="text"
-                      name="destination_name"
-                      value={formData.destination_name}
-                      onChange={handleChange}
-                      className="w-full border rounded-lg p-2"
-                      disabled={!hasPermission}
-                    />
-                  </div>*/}
-                  
-                  <div>
-                    <label className="block text-gray-700 mb-1">Destination Wilaya</label>
-                    <select
-                      name="destination_wilaya.destination_name"
-                      value={`${formData.destination_wilaya}-${formData.destination_name}`}
-                      onChange={handleChange}
-                      className="w-full border rounded-lg p-2"
-                      disabled={!hasPermission}
-                    >
-                      <option value="">Select Wilaya</option>
-                      {wilayas && wilayas.map((wilaya, key) => (
-                        <option key={key} value={`${wilaya.code}-${wilaya.name}`}>{wilaya.code}-{wilaya.name}</option>
-                      ))}
-                    </select>
-                  </div>
+    <div className="grid md:grid-cols-2 gap-6">
+      <div className="space-y-4">
+        <div>
+          <label className="block text-gray-700 mb-1">Personnel</label>
+          <select
+            name="personnel_details"
+            value={formData.personnel_details}
+            onChange={handleChange}
+            className="w-full border rounded-lg p-2"
+            multiple
+            size="4"
+            disabled={!hasPermission}
+          >
+            {personnels && personnels.map((personnel, key) => (
+              <option key={key} value={personnel.id}>{personnel.name}-{personnel.profession}</option>
+            ))}
+          </select>
+          <small className="text-gray-500">Hold Ctrl/Cmd to select multiple personnel</small>
+        </div>
+        
+        <div>
+          <label className="block text-gray-700 mb-1">Destination Wilaya</label>
+          <select
+            name="destination_wilaya.destination_name"
+            value={`${formData.destination_wilaya}-${formData.destination_name}`}
+            onChange={handleChange}
+            className="w-full border rounded-lg p-2"
+            disabled={!hasPermission}
+          >
+            <option value="">Select Wilaya</option>
+            {wilayas && wilayas.map((wilaya, key) => (
+              <option key={key} value={`${wilaya.code}-${wilaya.name}`}>{wilaya.code}-{wilaya.name}</option>
+            ))}
+          </select>
+        </div>
 
-                  <div>
-                    <label className="block text-gray-700 mb-1">Mission Nature</label>
-                    <input
-                      type="text"
-                      name="mission_nature"
-                      value={formData.mission_nature}
-                      onChange={handleChange}
-                      className="w-full border rounded-lg p-2"
-                      disabled={!hasPermission}
-                    />
-                  </div>
+        <div>
+          <label className="block text-gray-700 mb-1">Mission Nature</label>
+          <select
+            name="mission_nature"
+            value={formData.mission_nature}
+            onChange={handleChange}
+            className="w-full border rounded-lg p-2"
+            disabled={!hasPermission}
+          >
+            <option value="">Select mission nature</option>
+            <option value="Thesis Discussion">Thesis Discussion</option>
+            <option value="Forum">Forum</option>
+            <option value="Administrative Task">Administrative Task</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        
+        <div>
+          <label className="block text-gray-700 mb-1">Transport Type</label>
+          <select
+            name="transport_type"
+            value={formData.transport_type}
+            onChange={handleChange}
+            className="w-full border rounded-lg p-2"
+            disabled={!hasPermission}
+          >
+            <option value="">Select Transport</option>
+            <option value="Personal Car">Personal Car</option>
+            <option value="Taxi">Taxi</option>
+            <option value="Bus">Bus</option>
+            <option value="Faculty Driver">Faculty Driver</option>
+            <option value="other">other</option>
+          </select>
+        </div>
 
-                  <div>
-                    <label className="block text-gray-700 mb-1">Transport Type</label>
-                    <select
-                      name="transport_type"
-                      value={formData.transport_type}
-                      onChange={handleChange}
-                      className="w-full border rounded-lg p-2"
-                      disabled={!hasPermission}
-                    >
-                      <option value="">Select Transport</option>
-                      <option value="Taxi">Taxi</option>
-                      <option value="Bus">Bus</option>
-                      <option value="Train">Train</option>
-                      <option value="Plane">Plane</option>
-                    </select>
-                  </div>
+        <div>
+          <label className="block text-gray-700 mb-1">Funding Type</label>
+          <select
+            name="funding_type"
+            value={formData.funding_type}
+            onChange={handleChange}
+            className="w-full border rounded-lg p-2"
+            disabled={!hasPermission}
+          >
+            <option value="">Select a funding type</option>
+            <option value="100% Funded">100% Funded</option>
+            <option value="25% Funding">25% Funding</option>
+          </select>
+        </div>
+      </div>
+      
+      <div className="space-y-4">
+        <div>
+          <label className="block text-gray-700 mb-1">Arrival Date</label>
+          <input
+            type="date"
+            name="date_arrival"
+            value={formData.date_arrival}
+            onChange={handleChange}
+            className="w-full border rounded-lg p-2"
+            disabled={!hasPermission}
+          />
+        </div>
 
-                  <div>
-                    <label className="block text-gray-700 mb-1">Funding Type</label>
-                    <input
-                      type="text"
-                      name="funding_type"
-                      value={formData.funding_type}
-                      onChange={handleChange}
-                      className="w-full border rounded-lg p-2"
-                      disabled={!hasPermission}
-                    />
-                  </div>
-                </div>
-                
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-gray-700 mb-1">Arrival Date</label>
-                    <input
-                      type="date"
-                      name="date_arrival"
-                      value={formData.date_arrival}
-                      onChange={handleChange}
-                      className="w-full border rounded-lg p-2"
-                      disabled={!hasPermission}
-                    />
-                  </div>
+        <div>
+          <label className="block text-gray-700 mb-1">Departure Date</label>
+          <input
+            type="date"
+            name="date_departure"
+            value={formData.date_departure}
+            onChange={handleChange}
+            className="w-full border rounded-lg p-2"
+            disabled={!hasPermission}
+          />
+        </div>
 
-                  <div>
-                    <label className="block text-gray-700 mb-1">Departure Date</label>
-                    <input
-                      type="date"
-                      name="date_departure"
-                      value={formData.date_departure}
-                      onChange={handleChange}
-                      className="w-full border rounded-lg p-2"
-                      disabled={!hasPermission}
-                    />
-                  </div>
+        <div>
+          <label className="block text-gray-700 mb-1">Departure Time</label>
+          <input
+            type="time"
+            name="time_departure"
+            value={formData.time_departure}
+            onChange={handleChange}
+            className="w-full border rounded-lg p-2"
+            disabled={!hasPermission}
+          />
+        </div>
 
-                  <div>
-                    <label className="block text-gray-700 mb-1">Departure Time</label>
-                    <input
-                      type="time"
-                      name="time_departure"
-                      value={formData.time_departure}
-                      onChange={handleChange}
-                      className="w-full border rounded-lg p-2"
-                      disabled={!hasPermission}
-                    />
-                  </div>
+        <div>
+          <label className="block text-gray-700 mb-1">Arrival Time</label>
+          <input
+            type="time"
+            name="time_arrival"
+            value={formData.time_arrival}
+            onChange={handleChange}
+            className="w-full border rounded-lg p-2"
+            disabled={!hasPermission}
+          />
+        </div>
+      </div>
+    </div>
 
-                  <div>
-                    <label className="block text-gray-700 mb-1">Arrival Time</label>
-                    <input
-                      type="time"
-                      name="time_arrival"
-                      value={formData.time_arrival}
-                      onChange={handleChange}
-                      className="w-full border rounded-lg p-2"
-                      disabled={!hasPermission}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-gray-700 mb-1">Nights Stayed</label>
-                    <input
-                      type="number"
-                      name="nights_stayed"
-                      value={formData.nights_stayed}
-                      onChange={handleChange}
-                      className="w-full border rounded-lg p-2"
-                      disabled={!hasPermission}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-gray-700 mb-1">Meals Covered</label>
-                    <input
-                      type="text"
-                      name="meals_covered"
-                      value={formData.meals_covered}
-                      onChange={handleChange}
-                      className="w-full border rounded-lg p-2"
-                      disabled={!hasPermission}
-                    />
-                  </div>
-                </div>
-
-                <div className="md:col-span-2 space-y-4">
-                  <h3 className="text-lg font-semibold mb-4 border-b pb-2">Payment Information</h3>
-                  <div className="grid md:grid-cols-4 gap-4">
-                    <div>
-                      <label className="block text-gray-700 mb-1">Transport Payment</label>
-                      <input
-                        type="number"
-                        name="transport_payment"
-                        value={formData.transport_payment}
-                        onChange={handleChange}
-                        className="w-full border rounded-lg p-2"
-                        disabled={!hasPermission}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-gray-700 mb-1">Meal Payment</label>
-                      <input
-                        type="number"
-                        name="meal_payment"
-                        value={formData.meal_payment}
-                        onChange={handleChange}
-                        className="w-full border rounded-lg p-2"
-                        disabled={!hasPermission}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-gray-700 mb-1">Lodging Payment</label>
-                      <input
-                        type="number"
-                        name="lodging_payment"
-                        value={formData.lodging_payment}
-                        onChange={handleChange}
-                        className="w-full border rounded-lg p-2"
-                        disabled={!hasPermission}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-gray-700 mb-1">Total Payment</label>
-                      <input
-                        type="number"
-                        name="total_payment"
-                        value={formData.total_payment}
-                        onChange={handleChange}
-                        className="w-full border rounded-lg p-2"
-                        disabled={!hasPermission}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-8 flex justify-end gap-4">
-                <button 
-                  onClick={() => {
-                    setActiveTab("list");
-                    setSelectedMission(null);
-                    resetForm();
-                  }}
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:cursor-pointer"
-                >
-                  Cancel
-                </button>
-                {hasPermission && (
-                  <button 
-                    onClick={updateMission}
-                    className="px-4 py-2 bg-[#00064d] text-white rounded-lg flex items-center hover:cursor-pointer transition-transform duration-300 ease-in-out hover:scale-105"
-                  >
-                    <Edit className="w-4 h-4 mr-2" />
-                    Update Mission
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
+    <div className="mt-8 flex justify-end gap-4">
+      <button 
+        onClick={() => {
+          setActiveTab("list");
+          setSelectedMission(null);
+          resetForm();
+        }}
+        className="px-4 py-2 border border-gray-300 rounded-lg hover:cursor-pointer"
+      >
+        Cancel
+      </button>
+      {hasPermission && (
+        <button 
+          onClick={updateMission}
+          className="px-4 py-2 bg-[#870839] text-white rounded-lg flex items-center hover:cursor-pointer transition-transform duration-300 ease-in-out hover:scale-105"
+        >
+          <Edit className="w-4 h-4 mr-2" />
+          Update Mission
+        </button>
+      )}
+    </div>
+  </div>
+)}
         </>  
       )} 
     </>

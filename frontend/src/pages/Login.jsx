@@ -8,7 +8,7 @@ export default function Login() {
   const [password, setPassword] = useState("");
 
   const [error, setError] = useState("");
-  const [sucess, setSucess] = useState("");
+  const [sucess, setSucess] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
@@ -31,18 +31,21 @@ export default function Login() {
           body: JSON.stringify({ username, password }),
         });
 
-        if (!response.ok) {
+        if (response.ok) {
+          const data = await response.json();
+          setSucess("You Are Logged In Succefully")
+          localStorage.setItem("access", data.access);
+          localStorage.setItem("refresh", data.refresh);
+          setLoading(false);
+          setTimeout(() => {
+            setSucess(null)
+             navigate("/missionManager");
+          }, 2000);
+         
+        } else {
           throw new Error("Invalid credentials");
         }
-
-        const data = await response.json();
-        setSucess("You Are Logged In Succefully")
-        localStorage.setItem("access", data.access);
-        localStorage.setItem("refresh", data.refresh);
-        setLoading(false);
-        setInterval(() => {
-          navigate("/missionManager");
-        }, 2000);
+        
       } catch (err) {
         setError(err.message);
         setLoading(false);
@@ -61,7 +64,7 @@ export default function Login() {
           <div className="mb-4">
             <label htmlFor="username" className="block text-lg font-semibold mb-1">User Name</label>
             <input
-              type="username"
+              type="text"
               id="username"
               className="w-full px-4 py-2 rounded-md focus:outline-none focus:ring-2 text-[#2b3d50] border-[#2b3d50] border-1"
               placeholder="username"

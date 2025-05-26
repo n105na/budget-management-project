@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import Missions from '../../components/Missions';
 import Willaya from '../../components/Willaya';
 import Grades from '../../components/Grades';
+import Dashboard from '../../components/Dashboard';
 
 const MissionManager = () => {
   const [userTab,setUserTab] = useState(false)
@@ -42,13 +43,30 @@ const MissionManager = () => {
     }*/
   },[accessToken,refreshToken])
 
-  //for disconnecting the user
-  const handleLogout = () => {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    navigate('/login');
-  };
+  const handleLogout = async () => {
+     
+      try {
+        const response = await fetchWithAuth(`${API_URL}/api/logout/`, {
+          method: "POST",
+          body: JSON.stringify({ refresh : refreshToken }),
+        });
 
+        if (response.ok) {
+          const data = await response.json();
+          console.log(data);
+          
+          //localStorage.removeItem('accessToken');
+          //localStorage.removeItem('refreshToken');
+          navigate(`/logout`)
+          
+        } else {
+          throw new Error("Invalid credentials");
+        }
+        
+      } catch (err) {
+        console.error(err.message);
+      }
+  };
   //fetching all missions
   useEffect(() => {
     const fetchMissions = async () => {
@@ -96,24 +114,10 @@ const MissionManager = () => {
             Personnels
           </li>
           <li 
-          onClick={() => setSelectedOption('Missions / Personnels')}
-          className={`flex items-center gap-8 text-lg hover:bg-[#870839] hover:text-white p-2 cursor-pointer rounded-[4px] ${selectedOption === "Missions / Personnels" ? "bg-[#870839] text-white" : ""}`}>
-            <div className='flex -mr-6'>
-              <Medal className="w-6 h-6" /><Users className="w-6 h-6" />
-            </div>
-            Missions / Personnels
-          </li>
-          <li 
           onClick={() => setSelectedOption('Grades')}
           className={`flex items-center gap-8 text-lg hover:bg-[#870839] hover:text-white p-2 cursor-pointer rounded-[4px] ${selectedOption === "Grades" ? "bg-[#870839] text-white" : ""}`}>
             <BadgeCheck className="w-6 h-6" />
             Grades
-          </li>
-          <li 
-          onClick={() => setSelectedOption('Grade Payments')}
-          className={`flex items-center gap-8 text-lg hover:bg-[#870839] hover:text-white p-2 cursor-pointer rounded-[4px] ${selectedOption === "Grade Payments" ? "bg-[#870839] text-white" : ""}`}>
-            <DollarSign className="w-6 h-6" />
-            Grade Payments
           </li>
           <li 
           onClick={() => setSelectedOption('Reports')}
@@ -184,11 +188,9 @@ const MissionManager = () => {
          }
         {selectedOption === "Dashboard" && 
           <>
-            
-            
+            <Dashboard userLoggedin = {user}/>
           </>
         }
-
         {selectedOption === "Missions" && 
          <Missions userLoggedin = {user} />
         }
@@ -197,18 +199,8 @@ const MissionManager = () => {
          <Personnels userLoggedin = {user} />
         }
         
-        {selectedOption === "Missions / Personnels" && 
-          <>
-            
-            
-          </>
-        }
-
         {selectedOption === "Grades" && 
          <Grades userLoggedin = {user} />
-        }
-        {selectedOption === "Grade Payments" && 
-         <h1 className='text-3xl text-center'>{selectedOption}</h1>
         }
 
         {selectedOption === "Reports" && 
