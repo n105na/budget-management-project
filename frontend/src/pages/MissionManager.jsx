@@ -54,13 +54,15 @@ const MissionManager = () => {
         if (response.ok) {
           const data = await response.json();
           console.log(data);
-          
-          //localStorage.removeItem('accessToken');
-          //localStorage.removeItem('refreshToken');
+          console.log("Logging out...");
+
+          localStorage.removeItem('access');
+          localStorage.removeItem('refresh');
           navigate(`/logout`)
           
         } else {
           throw new Error("Invalid credentials");
+          
         }
         
       } catch (err) {

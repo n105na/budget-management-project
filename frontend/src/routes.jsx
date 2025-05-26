@@ -1,29 +1,26 @@
-// routes.jsx
-import { Routes, Route } from 'react-router-dom';
-import Home from './pages/Home';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import MissionManager from './pages/MissionManager';
-import LogOut from './pages/Logout';
+import { Routes, Route } from "react-router-dom";
+import PrivateRoute from "../components/PrivateRoute"; // adjust path if needed
+
+import Home from "./pages/Home";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import MissionManager from "./pages/MissionManager";
+import LogOut from "./pages/Logout";
 
 const RoutesList = () => {
   return (
     <Routes>
-      {/*<Route path="/" element={<MissionManager />} />*/}
-
-      <Route path="/" element={<Home />} />
+      {/* Public Routes */}
       <Route path="/login" element={<Login />} />
       <Route path="/logout" element={<LogOut />} />
       <Route path="/register" element={<Register />} />
-      <Route path="/missionManager" element={<MissionManager />} />
+
+      {/* Private Routes */}
       
-      {/*}
-        <Route path="/missions" element={<Missions />} />
-        <Route path="/engagement" element={<Engagement />} />
-        <Route path="/mandatement" element={<Mandatement />} />
-        <Route path="/reports" element={<Reports />} />  
-        <Route path="*" element={<NotFound />} />
-      */}
+        <Route path="/" element={<Home />} />
+        <Route element={<PrivateRoute />}>
+        <Route path="/missionManager" element={<MissionManager />} />
+      </Route>
     </Routes>
   );
 };
