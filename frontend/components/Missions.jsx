@@ -118,7 +118,6 @@ console.log("missions  broo:",formData);
     try {
       const res = await fetchWithAuth(`${API_URL}/api/mission-personnel/`, {
         method: "POST",
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
       });
 
@@ -168,7 +167,6 @@ console.log("missions  broo:",formData);
     try {
       const res = await fetchWithAuth(`${API_URL}/api/mission-personnel/${selectedMission.id}/`, {
         method: "PATCH",
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
       });
 

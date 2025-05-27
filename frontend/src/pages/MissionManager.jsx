@@ -1,4 +1,4 @@
-import { Menu, Home, DollarSign, Medal, BarChart3, Settings, MapPin, Users, BadgeCheck, Search, Plus, LogOut, User } from 'lucide-react';
+import { Menu, Home, DollarSign, Medal,Settings, BarChart3, MapPin, Users, BadgeCheck, Search, Plus, LogOut, User } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { jwtDecode } from "jwt-decode";
 import { fetchWithAuth } from '../utils/fetchWithAuth';
@@ -8,6 +8,7 @@ import Missions from '../../components/Missions';
 import Willaya from '../../components/Willaya';
 import Grades from '../../components/Grades';
 import Dashboard from '../../components/Dashboard';
+import Settingss from '../../components/Settings';
 
 const MissionManager = () => {
   const [userTab,setUserTab] = useState(false)
@@ -22,7 +23,6 @@ const MissionManager = () => {
 
   const [personnels, setPersonnels] = useState([]);
   const API_URL = import.meta.env.VITE_API_URL;
-
 
 
   useEffect(() => {
@@ -69,6 +69,9 @@ const MissionManager = () => {
         console.error(err.message);
       }
   };
+   useEffect(() => {
+   console.log("user : ", user);
+  },[user])
   //fetching all missions
   useEffect(() => {
     const fetchMissions = async () => {
@@ -122,16 +125,16 @@ const MissionManager = () => {
             Grades
           </li>
           <li 
-          onClick={() => setSelectedOption('Reports')}
-          className={`flex items-center gap-8 text-lg hover:bg-[#870839] hover:text-white p-2 cursor-pointer rounded-[4px] ${selectedOption === "Reports" ? "bg-[#870839] text-white" : ""}`}>
-            <BarChart3 className="w-6 h-6" />
-            Reports
-          </li>
-          <li 
           onClick={() => setSelectedOption('Wilaya')}
           className={`flex items-center gap-8 text-lg hover:bg-[#870839] hover:text-white p-2 cursor-pointer rounded-[4px] ${selectedOption === "Wilaya" ? "bg-[#870839] text-white" : ""}`}>
             <MapPin className="w-6 h-6" />
             Wilaya
+          </li>
+          <li 
+          onClick={() => setSelectedOption('Reports')}
+          className={`flex items-center gap-8 text-lg hover:bg-[#870839] hover:text-white p-2 cursor-pointer rounded-[4px] ${selectedOption === "Reports" ? "bg-[#870839] text-white" : ""}`}>
+            <BarChart3 className="w-6 h-6" />
+            Reports
           </li>
           <li
           onClick={() => setSelectedOption('Settings')}
@@ -168,7 +171,9 @@ const MissionManager = () => {
                   <ul className='space-y-2'>
                     <li className="text-white font-semibold">{user.username}</li>
                     <li className="text-white font-semibold">{user.role}</li>
-                    <li className="text-white font-semibold flex px-4 py-2 rounded-lg justify-center items-center gap-4 text-xl hover:cursor-pointer hover:bg-white hover:text-[#00064d]">
+                    <li className="text-white font-semibold flex px-4 py-2 rounded-lg justify-center items-center gap-4 text-xl hover:cursor-pointer hover:bg-white hover:text-[#00064d]"
+                    onClick={() => {navigate(`/profile/${user.user_id}`)} }
+                    >
                       <User/>
                       Profile
                       </li>
@@ -214,7 +219,7 @@ const MissionManager = () => {
         }
 
         {selectedOption === "Settings" && 
-         <h1 className='text-3xl text-center'>{selectedOption}</h1>
+         <Settingss userLoggedin = {user} />
         }
 
       </div>

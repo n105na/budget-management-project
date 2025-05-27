@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../index.css";
+import { fetchWithAuth } from "../utils/fetchWithAuth";
 
 
 
@@ -13,50 +14,51 @@ export default function Register() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState("Doyen");
 
   const [error, setError] = useState("");
 
   const navigate = useNavigate();
 
   const API_URL = import.meta.env.VITE_API_URL;
-  const token = localStorage.getItem("access"); //adding this line (taking the token from local storage )
   const [success, setSuccess] = useState("");
+  const [formData,setFormData] = useState({
+    password : "",
+    username : "",
+    email : "",
+    role : "Doyen"
+  })
 
   const handleRegister = async (e) => {
     e.preventDefault();
 
     try {
-      const response = await fetch(`${API_URL}/api/register/`, {
+      const response = await fetchWithAuth(`${API_URL}/api/register/`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`  
-        },
-        body: JSON.stringify({  
-          password,
-          username,
-          email,
-          role
-        }),
+        body: JSON.stringify({formData}),
       });
 
-      if (!response.ok) {
-        throw new Error("Invalid credentials");
+      if (response.ok) {
+        setSuccess("User Registered Successfully!")
+        setTimeout(() => {
+          setSuccess(null)
+        }, 2000);
+        const data = await response.json();
+        localStorage.setItem("access", data.access);
+        localStorage.setItem("refresh", data.refresh);
+        navigate("/dashboard");
+      }else {
+       setError("Error Registering the user")      
       }
 
-      const data = await response.json();
-      localStorage.setItem("access", data.access);
-      localStorage.setItem("refresh", data.refresh);
-      //navigate("/dashboard");
+      
     } catch (err) {
       setError(err.message);
     }
   };
 
   useEffect(() => {
-   console.log("role : ",role);
-  },[role])
+   console.log("form : ",formData);
+  },[formData])
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#f6f8f9] " >
@@ -67,22 +69,22 @@ export default function Register() {
 
         <form onSubmit={handleRegister} className="space-y-4">
 
-          <ul className="flex bg-[#00064d] text-white rounded-full items-center justify-center font-semibold gap-2 border-2 border-[#00064d]">
+          <ul className="flex  text-[#00064d] rounded-full items-center justify-center font-semibold gap-2 ">
 
-            <li onClick={(e) => setRole("Doyen")}
-              className={role === "Doyen" ? "bg-white text-[#00064d] hover:cursor-pointer p-2" : "hover:cursor-pointer p-2  "}
+            <li onClick={(e) => setFormData({...formData,role : "Doyen"})}
+              className={formData.role === "Doyen" ? "text-white bg-[#00064d] rounded-full hover:cursor-pointer p-2" : "hover:cursor-pointer p-2  "}
             >Doyen</li>
 
-            <li onClick={(e) => setRole("Comptable")}
-              className={role === "Comptable" ? "bg-white text-[#00064d] hover:cursor-pointer p-2" : "hover:cursor-pointer p-2"}
+            <li onClick={(e) => setFormData({...formData,role : "Comptable"})}
+              className={formData.role === "Comptable" ? "text-white bg-[#00064d] rounded-full hover:cursor-pointer p-2" : "hover:cursor-pointer p-2"}
             >Comptable</li>
 
-            <li  onClick={(e) => setRole("Secretaire Generale")}
-              className={role === "Secretaire Generale" ? "bg-white text-[#00064d] hover:cursor-pointer p-2" : "hover:cursor-pointer p-2"}
+            <li  onClick={(e) => setFormData({...formData,role : "Secretaire"})}
+              className={formData.role === "Secretaire Generale" ? "text-white bg-[#00064d] rounded-full hover:cursor-pointer p-2" : "hover:cursor-pointer p-2"}
             >Secretaire</li>
 
-            <li  onClick={(e) => setRole("Commission")}
-              className={role === "Commission" ? "bg-white text-[#00064d] hover:cursor-pointer p-2" : "hover:cursor-pointer p-2"}
+            <li  onClick={(e) => setFormData({...formData,role : "Commission"})}
+              className={formData.role === "Commission" ? "text-white bg-[#00064d] rounded-full hover:cursor-pointer p-2" : "hover:cursor-pointer p-2"}
             >Commission</li>
 
           </ul>
@@ -96,8 +98,8 @@ export default function Register() {
               id="email"
               className="w-full px-4 py-2 rounded-md focus:outline-none focus:ring-2 text-[#2b3d50] border-[#2b3d50] border-1"
               placeholder="exemple@gmail.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              value={formData.email}
+              onChange={(e) => setFormData({...formData, email : e.target.value})}
             />
           </div>
 
@@ -108,8 +110,8 @@ export default function Register() {
               id="username"
               className="w-full px-4 py-2 rounded-md focus:outline-none focus:ring-2 text-[#2b3d50] border-[#2b3d50] border-1"
               placeholder="username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              value={formData.username}
+              onChange={(e) => setFormData({...formData, username : e.target.value})}
             />
           </div>
 
@@ -120,8 +122,8 @@ export default function Register() {
               id="password"
               className="w-full px-4 py-2 rounded-md focus:outline-none focus:ring-2 border-[#2b3d50] border-1 text-[#2b3d50]"
               placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              value={formData.password}
+              onChange={(e) => setFormData({...formData, password : e.target.value})}
             />
           </div>
 

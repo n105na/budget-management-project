@@ -138,7 +138,7 @@ const Dashboard = () => {
               <button
                 key={option.key}
                 onClick={() => setActiveFilter(option.key)}
-                className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
+                className={`px-6 py-3 rounded-lg font-medium transition-all hover:cursor-pointer duration-200 ${
                   activeFilter === option.key
                     ? 'bg-blue-600 text-white shadow-lg transform scale-105'
                     : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 hover:border-gray-300'

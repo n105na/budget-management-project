@@ -6,6 +6,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import MissionManager from "./pages/MissionManager";
 import LogOut from "./pages/Logout";
+import Profile from "./pages/Profile";
 
 const RoutesList = () => {
   return (
@@ -14,7 +15,7 @@ const RoutesList = () => {
       <Route path="/login" element={<Login />} />
       <Route path="/logout" element={<LogOut />} />
       <Route path="/register" element={<Register />} />
-
+      <Route path="/profile/:id" element={<Profile />} />
       {/* Private Routes */}
       
         <Route path="/" element={<Home />} />
