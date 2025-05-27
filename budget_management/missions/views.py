@@ -455,7 +455,7 @@ class GeneratePersonnelReportView(APIView):
             logger.error("Status Code: %s, Error: %s", response.status_code, str(e))
             print("Status Code:", response.status_code)
             return response
-
+        
 class GenerateMissionReportView(APIView):
     permission_classes = [AllowAny]
     parser_classes = [JSONParser]
@@ -598,6 +598,196 @@ class GenerateMissionReportView(APIView):
 
         except Mission.DoesNotExist:
             response = Response({'error': 'Mission not found'}, status=404)
+            logger.info("Status Code: %s", response.status_code)
+            print("Status Code:", response.status_code)
+            return response
+        except Exception as e:
+            response = Response({'error': f'Failed to generate report: {str(e)}'}, status=500)
+            logger.error("Status Code: %s, Error: %s", response.status_code, str(e))
+            print("Status Code:", response.status_code)
+            return response
+
+
+import logging
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import AllowAny
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.lib import colors
+from reportlab.lib.units import inch
+from io import BytesIO
+from personnel.models import Personnel
+from missions.models import Mission, MissionPersonnel
+from decimal import Decimal
+from datetime import datetime
+
+logger = logging.getLogger(__name__)
+
+class GeneratePersonnelMissionReportView(APIView):
+    permission_classes = [AllowAny]  # Adjust as needed (e.g., IsAuthenticated)
+    
+    def get(self, request, personnel_id, mission_id):
+        try:
+            # Validate inputs
+            if not personnel_id or not mission_id:
+                response = Response({'error': 'Personnel ID and Mission ID are required'}, status=400)
+                logger.info("Status Code: %s", response.status_code)
+                print("Status Code:", response.status_code)
+                return response
+
+            try:
+                personnel_id = int(personnel_id)
+                mission_id = int(mission_id)
+            except (TypeError, ValueError):
+                response = Response({'error': 'Invalid Personnel ID or Mission ID'}, status=400)
+                logger.info("Status Code: %s", response.status_code)
+                print("Status Code:", response.status_code)
+                return response
+
+            # Get MissionPersonnel record
+            mission_personnel = get_object_or_404(
+                MissionPersonnel.objects.select_related(
+                    'personnel', 'mission', 'mission__destination_wilaya'
+                ),
+                personnel_id=personnel_id,
+                mission_id=mission_id
+            )
+
+            personnel = mission_personnel.personnel
+            mission = mission_personnel.mission
+
+            # Create PDF
+            buffer = BytesIO()
+            doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=72, leftMargin=72, topMargin=72, bottomMargin=36)
+            elements = []
+            styles = getSampleStyleSheet()
+
+            # Title
+            elements.append(Paragraph(
+                "<para align=center><b>REPUBLIQUE ALGERIENNE DEMOCRATIQUE ET POPULAIRE</b></para>",
+                styles['Title']
+            ))
+            elements.append(Paragraph(
+                "<para align=center><b>Faculté des Sciences Exactes</b></para>",
+                styles['Heading2']
+            ))
+            elements.append(Spacer(1, 20))
+            elements.append(Paragraph(
+                f"<para align=center><b>RAPPORT DE MISSION - PERSONNEL</b></para>",
+                styles['Heading2']
+            ))
+            elements.append(Spacer(1, 20))
+
+            # Personnel Details
+            elements.append(Paragraph("<b>INFORMATIONS DU PERSONNEL</b>", styles['Heading3']))
+            elements.append(Spacer(1, 10))
+            personnel_data = [
+                ['Nom et Prénom:', personnel.name],
+                ['Profession:', personnel.profession or 'N/A'],
+                ['Grade:', personnel.grade.name if personnel.grade else 'N/A'],
+                ['Numéro de Compte:', personnel.account_number or 'N/A'],
+                ['Type de Compte:', 'CCP' if personnel.is_ccp_account else 'Bancaire'],
+                ['Adresse:', personnel.address or 'N/A'],
+                ['Wilaya:', personnel.wilaya.name if personnel.wilaya else 'N/A'],
+            ]
+            personnel_table = Table(personnel_data, colWidths=[2*inch, 4*inch])
+            personnel_table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (0, -1), colors.lightgrey),
+                ('TEXTCOLOR', (0, 0), (0, -1), colors.black),
+                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+                ('FONTNAME', (1, 0), (1, -1), 'Helvetica'),
+                ('FONTSIZE', (0, 0), (-1, -1), 10),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
+                ('BACKGROUND', (1, 0), (1, -1), colors.beige),
+                ('GRID', (0, 0), (-1, -1), 1, colors.black)
+            ]))
+            elements.append(personnel_table)
+            elements.append(Spacer(1, 20))
+
+            # Mission Details
+            elements.append(Paragraph("<b>DÉTAILS DE LA MISSION</b>", styles['Heading3']))
+            elements.append(Spacer(1, 10))
+            mission_data = [
+                ['Mission ID:', str(mission.id)],
+                ['Destination:', mission.destination_wilaya.name],
+                ['Nature:', dict(Mission.MISSION_NATURE_CHOICES).get(mission.mission_nature, mission.mission_nature)],
+                ['Date de départ:', mission.date_departure.strftime('%d/%m/%Y')],
+                ['Date d’arrivée:', mission.date_arrival.strftime('%d/%m/%Y')],
+                ['Heure de départ:', mission.time_departure.strftime('%H:%M')],
+                ['Heure d’arrivée:', mission.time_arrival.strftime('%H:%M')],
+                ['Type de transport:', dict(Mission.TRANSPORT_CHOICES).get(mission.transport_type, mission.transport_type)],
+                ['Type de financement:', dict(Mission.FUNDING_CHOICES).get(mission.funding_type, mission.funding_type)],
+                ['Nuits d’hébergement:', str(mission.nights_stayed)],
+                ['Repas couverts:', str(mission.meals_covered)],
+            ]
+            mission_table = Table(mission_data, colWidths=[2*inch, 4*inch])
+            mission_table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (0, -1), colors.lightgrey),
+                ('TEXTCOLOR', (0, 0), (0, -1), colors.black),
+                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+                ('FONTNAME', (1, 0), (1, -1), 'Helvetica'),
+                ('FONTSIZE', (0, 0), (-1, -1), 10),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
+                ('BACKGROUND', (1, 0), (1, -1), colors.beige),
+                ('GRID', (0, 0), (-1, -1), 1, colors.black)
+            ]))
+            elements.append(mission_table)
+            elements.append(Spacer(1, 20))
+
+            # Payment Details
+            elements.append(Paragraph("<b>DÉTAILS DES PAIEMENTS</b>", styles['Heading3']))
+            elements.append(Spacer(1, 10))
+            payment_data = [
+                ['Type', 'Montant (DA)'],
+                ['Transport:', f"{mission_personnel.transport_payment:.2f}"],
+                ['Repas:', f"{mission_personnel.meal_payment:.2f}"],
+                ['Hébergement:', f"{mission_personnel.lodging_payment or Decimal('0'):.2f}"],
+                ['Total:', f"{mission_personnel.total_payment:.2f}"]
+            ]
+            payment_table = Table(payment_data, colWidths=[3*inch, 2*inch])
+            payment_table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+                ('FONTSIZE', (0, 0), (-1, -1), 10),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
+                ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+                ('BACKGROUND', (0, -1), (-1, -1), colors.lightgreen),
+                ('GRID', (0, 0), (-1, -1), 1, colors.black)
+            ]))
+            elements.append(payment_table)
+            elements.append(Spacer(1, 20))
+
+            # Footer
+            elements.append(Spacer(1, 30))
+            elements.append(Paragraph(
+                f"<para align=center>Rapport généré le {datetime.now().strftime('%d/%m/%Y à %H:%M')}</para>",
+                styles['Normal']
+            ))
+
+            # Build PDF
+            doc.build(elements)
+            buffer.seek(0)
+
+            # Create response
+            response = HttpResponse(buffer, content_type='application/pdf', status=200)
+            clean_name = personnel.name.replace(' ', '_').replace(',', '').replace('.', '')
+            filename = f"rapport_mission_personnel_{clean_name}_{mission.id}.pdf"
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            logger.info("Status Code: %s", response.status_code)
+            print("Status Code:", response.status_code)
+            return response
+
+        except MissionPersonnel.DoesNotExist:
+            response = Response({'error': 'Personnel not assigned to this mission'}, status=404)
             logger.info("Status Code: %s", response.status_code)
             print("Status Code:", response.status_code)
             return response
