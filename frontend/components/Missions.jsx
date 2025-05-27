@@ -30,9 +30,9 @@ const Missions = (user) => {
     personnel_details: []
   });
 useEffect(() => {
-console.log("missions  broo:",formData);
+console.log("missions  broo:",selectedMission);
 
-},[formData])
+},[selectedMission])
   // Check if user has permission to modify missions
   const hasPermission = user.userLoggedin.role === "Secretaire Generale" || user.userLoggedin.role === "Comptable";
 
@@ -258,7 +258,26 @@ console.log("missions  broo:",formData);
      // total_payment: ""
     });
   };
+  const handleReportPdf = async (personelId) => {
+    if (!hasPermission || !selectedMission) return;
 
+    try {
+      const res = await fetchWithAuth(`${API_URL}/api/personnel-mission-report/${personelId}/${selectedMission.id}`, {
+        method: "GET",
+        headers: { Accept: 'application/pdf' }
+      });
+
+      if (res.ok) {
+       console.log("message : ",res);
+       
+      } else {
+        throw new Error('Failed to get pdf report');
+      }
+    } catch (err) {
+      //setError("Failed to update mission");
+      console.error(err);
+    }
+  };
   const handleChange = (e) => {
     const { name, value } = e.target;
     if (name === "destination_wilaya.destination_name") {
@@ -460,9 +479,10 @@ console.log("missions  broo:",formData);
 
                 <div className="col-span-2">
                   <h3 className="text-lg font-semibold mb-4 border-b pb-2">Personnels Information</h3>
-                  {selectedMission.personnel_details?.map((person) => {
+                  {selectedMission.personnel_details?.map((person,key) => {
                     return(
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 border-b py-6">
+                      <>
+                      <div key={key} className="grid grid-cols-2 md:grid-cols-4 gap-4 border-b py-6">
                         <div>
                           <span className="text-gray-500 block">Personel Name</span>
                           <span className="font-medium">{person.personnel_details?.name}</span>
@@ -495,7 +515,20 @@ console.log("missions  broo:",formData);
                           <span className="text-gray-500 block">Total Payment</span>
                           <span className="font-bold text-[#00064d]">{person.total_payment} DA</span>
                         </div>
+                        <div>
+                          <button 
+                            onClick={() => {
+                              handleReportPdf(person.personnel_details?.id)
+                            }}
+                            className=" flex items-center gap-2 text-white px-4 py-2 rounded-lg bg-gray-600 hover:cursor-pointer border shadow-2xl border-gray-200"
+                            >
+                            <FileText />
+                            Rapport
+                          </button>
+                        </div>
                       </div>
+                     
+                      </>
                     )
                   })}
                 </div>
@@ -511,14 +544,6 @@ console.log("missions  broo:",formData);
                 
                 {hasPermission && (
                   <>
-                    <button 
-                      onClick={() => {
-                      }}
-                      className=" flex items-center gap-2 text-white px-4 py-2 rounded-lg bg-gray-600 hover:cursor-pointer border shadow-2xl border-gray-200"
-                    >
-                      <FileText />
-                      PDF
-                    </button>
                     <button 
                       onClick={() => handleEdit(selectedMission.id)}
                       className="px-4 py-2 bg-[#870839] text-white rounded-lg flex items-center hover:cursor-pointer"

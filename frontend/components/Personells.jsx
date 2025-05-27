@@ -1,4 +1,4 @@
-import {Search, Plus, Edit, UserCircle, X} from 'lucide-react'
+import {Search, Plus, Edit, UserCircle, X, FileText} from 'lucide-react'
 import { fetchWithAuth } from '../src/utils/fetchWithAuth';
 import { useEffect, useState ,useMemo } from 'react';
 
@@ -321,12 +321,30 @@ const Personnels = (user) => {
       grade: ''
     });
   };
+
+  const handleReportPdf = async (personelId) => {
+    try {
+      const res = await fetchWithAuth(`${API_URL}/api/personnel-report/${personelId}/`, {
+        method: "GET",
+        headers: { Accept: 'application/pdf' }
+      });
+
+      if (res.ok) {
+       console.log("message : ",res);
+       
+      } else {
+        throw new Error('Failed to update mission');
+      }
+    } catch (err) {
+      //setError("Failed to update mission");
+      console.error(err);
+    }
+  };
+
   return(
     <>
       
     <div className='flex items-center justify-center gap-4 p-4 bg-white rounded-xl shadow-md mb-6'>
-      
-
       <div className='flex  items-center gap-4'>
         {/* Search Bar */}
         <div className='relative flex items-center bg-gray-100 rounded-full px-4 py-2 w-full md:w-auto shadow-sm'>
@@ -540,6 +558,16 @@ const Personnels = (user) => {
                 
                 {hasPermission && (
                   <>
+                    <button 
+                      onClick={() => {
+                        handleReportPdf(selectedPerson.id)
+                      }}
+                      className=" flex items-center gap-2 text-white px-4 py-2 rounded-lg bg-gray-600 hover:cursor-pointer border shadow-2xl border-gray-200"
+                      >
+                      <FileText/>
+                      Rapport
+                    </button>
+                       
                     <button 
                       onClick={() => handleEdit(selectedPerson.id)}
                       className="px-4 py-2 bg-[#870839] text-white rounded-lg flex items-center  hover:cursor-pointer"
