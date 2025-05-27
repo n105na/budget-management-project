@@ -9,7 +9,8 @@ from .views import (
     GroupedMissionsView, 
     MissionWithPersonnelViewSet, # This is the main one for creating missions with personnel
     GeneratePersonnelReportView,
-    GenerateMissionReportView
+    GenerateMissionReportView,
+    GeneratePersonnelMissionReportView
 )
 
 router = DefaultRouter()
@@ -25,6 +26,8 @@ urlpatterns = [
     path('personnel-report/<int:id>/', GeneratePersonnelReportView.as_view(), name='generate-personnel-report'),
     path('personnel-report/<int:id>/<int:year>/', GeneratePersonnelReportView.as_view(), name='generate-personnel-report-year'),
     path('mission-report/<int:mission_id>/', GenerateMissionReportView.as_view(), name='generate-mission-report'),
+    path('personnel-mission-report/<int:personnel_id>/<int:mission_id>/', GeneratePersonnelMissionReportView.as_view(), name='generate-mission'),
+    
 
     # path('missions/', GroupedMissionsView.as_view(), name='missions'),
 ]

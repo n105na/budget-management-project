@@ -1,24 +1,20 @@
-import {Search, Plus, Edit, MapPin, X, Calendar, Clock, DollarSign, PlusIcon, FileText} from 'lucide-react'
+import { Search, Plus, Edit, MapPin, X, Calendar, Clock, DollarSign, PlusIcon, FileText } from 'lucide-react';
 import { fetchWithAuth } from '../src/utils/fetchWithAuth';
 import { useEffect, useState, useMemo } from 'react';
+import { toast } from 'react-toastify'; // Add this import
 
 const Missions = (user) => {
-
   const [missions, setMissions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [wilayas, setWilayas] = useState([]);
   const [personnels, setPersonnels] = useState([]);
-
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
-
   const API_URL = import.meta.env.VITE_API_URL;
   const [activeTab, setActiveTab] = useState("list");
   const [selectedMission, setSelectedMission] = useState(null);
   const [formData, setFormData] = useState({
     destination_name: "",
-    //nights_stayed: "",
-    //meals_covered: "",
     date_arrival: "",
     date_departure: "",
     transport_type: "",
@@ -29,10 +25,12 @@ const Missions = (user) => {
     destination_wilaya: "",
     personnel_details: []
   });
-useEffect(() => {
-console.log("missions  broo:",selectedMission);
+  const [pdfLoading, setPdfLoading] = useState({}); // Track loading state per personnel
 
-},[selectedMission])
+useEffect(() => {
+console.log("missions  broo:",formData);
+
+},[formData])
   // Check if user has permission to modify missions
   const hasPermission = user.userLoggedin.role === "Secretaire Generale" || user.userLoggedin.role === "Comptable";
 
@@ -258,26 +256,7 @@ console.log("missions  broo:",selectedMission);
      // total_payment: ""
     });
   };
-  const handleReportPdf = async (personelId) => {
-    if (!hasPermission || !selectedMission) return;
 
-    try {
-      const res = await fetchWithAuth(`${API_URL}/api/personnel-mission-report/${personelId}/${selectedMission.id}`, {
-        method: "GET",
-        headers: { Accept: 'application/pdf' }
-      });
-
-      if (res.ok) {
-       console.log("message : ",res);
-       
-      } else {
-        throw new Error('Failed to get pdf report');
-      }
-    } catch (err) {
-      //setError("Failed to update mission");
-      console.error(err);
-    }
-  };
   const handleChange = (e) => {
     const { name, value } = e.target;
     if (name === "destination_wilaya.destination_name") {
@@ -307,7 +286,39 @@ console.log("missions  broo:",selectedMission);
     fetchMissions();
   }, []);
 
-  
+  const handleGeneratePDF = async (personnelId, missionId) => {
+    setPdfLoading((prev) => ({ ...prev, [personnelId]: true }));
+    try {
+      const url = `${API_URL}/api/personnel-mission-report/${personnelId}/${missionId}/`;
+      const res = await fetchWithAuth(url, {
+        method: "GET",
+        headers: { Accept: 'application/pdf' }
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to generate PDF report');
+      }
+
+      const blob = await res.blob();
+      const urlBlob = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = urlBlob;
+      link.download = `rapport_mission_personnel_${personnelId}_${missionId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(urlBlob);
+
+      toast.success('PDF report generated and downloaded');
+    } catch (err) {
+      toast.error(err.message || 'Error generating PDF report');
+      console.error(err);
+    } finally {
+      setPdfLoading((prev) => ({ ...prev, [personnelId]: false }));
+    }
+  };
+
  
   return (
     <>
@@ -407,165 +418,161 @@ console.log("missions  broo:",selectedMission);
           )}
 
           {/* View details tab */}
-          {activeTab === "view" && selectedMission && (
-            <div className="mx-auto max-w-4xl p-6 bg-white rounded-lg shadow-lg">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-[#00064d]">Mission Details</h2>
-                <button 
-                  onClick={() => setActiveTab("list")}
-                  className="text-gray-500 hover:text-gray-700 hover:cursor-pointer"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
+      {activeTab === "view" && selectedMission && (
+        <div className="mx-auto max-w-4xl p-6 bg-white rounded-lg shadow-lg">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-[#00064d]">Mission Details</h2>
+            <button 
+              onClick={() => setActiveTab("list")}
+              className="text-gray-500 hover:text-gray-700 hover:cursor-pointer"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
 
-              <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-2 gap-6">
+            <div>
+              <h3 className="text-lg font-semibold mb-4 border-b pb-2">Mission Information</h3>
+              <div className="space-y-3">
                 <div>
-                  <h3 className="text-lg font-semibold mb-4 border-b pb-2">Mission Information</h3>
-                  <div className="space-y-3">
-                   
-                    <div>
-                      <span className="text-gray-500 block">Destination</span>
-                      <span className="font-medium">{selectedMission.destination_name}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-500 block">Mission Nature</span>
-                      <span className="font-medium">{selectedMission.mission_nature}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-500 block">Year</span>
-                      <span className="font-medium">{selectedMission.year}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-500 block">Transport Type</span>
-                      <span className="font-medium">{selectedMission.transport_type}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-500 block">Funding Type</span>
-                      <span className="font-medium">{selectedMission.funding_type}</span>
-                    </div>
-                  </div>
+                  <span className="text-gray-500 block">Destination</span>
+                  <span className="font-medium">{selectedMission.destination_name}</span>
                 </div>
-
                 <div>
-                  <h3 className="text-lg font-semibold mb-4 border-b pb-2">Travel Details</h3>
-                  <div className="space-y-3">
-                    <div>
-                      <span className="text-gray-500 block">Arrival Date</span>
-                      <span className="font-medium">{selectedMission.date_arrival}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-500 block">Departure Date</span>
-                      <span className="font-medium">{selectedMission.date_departure}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-500 block">Departure Time</span>
-                      <span className="font-medium">{selectedMission.time_departure}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-500 block">Arrival Time</span>
-                      <span className="font-medium">{selectedMission.time_arrival}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-500 block">Nights Stayed</span>
-                      <span className="font-medium">{selectedMission.nights_stayed}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-500 block">Meals Covered</span>
-                      <span className="font-medium">{selectedMission.meals_covered}</span>
-                    </div>
-                  </div>
+                  <span className="text-gray-500 block">Mission Nature</span>
+                  <span className="font-medium">{selectedMission.mission_nature}</span>
                 </div>
-
-                <div className="col-span-2">
-                  <h3 className="text-lg font-semibold mb-4 border-b pb-2">Personnels Information</h3>
-                  {selectedMission.personnel_details?.map((person,key) => {
-                    return(
-                      <>
-                      <div key={key} className="grid grid-cols-2 md:grid-cols-4 gap-4 border-b py-6">
-                        <div>
-                          <span className="text-gray-500 block">Personel Name</span>
-                          <span className="font-medium">{person.personnel_details?.name}</span>
-                        </div>
-                        <div>
-                          <span className="text-gray-500 block">Profession</span>
-                          <span className="font-medium">{person.personnel_details?.profession}</span>
-                        </div>
-                        <div>
-                          <span className="text-gray-500 block">grade</span>
-                          <span className="font-medium">{person.personnel_details?.grade.name}</span>
-                        </div>
-                        <div>
-                          <span className="text-gray-500 block">address</span>
-                          <span >{person.personnel_details?.address}</span>
-                        </div>
-                        <div>
-                          <span className="text-gray-500 block">Transport Payment</span>
-                          <span className="font-medium">{person.transport_payment} DA</span>
-                        </div>
-                        <div>
-                          <span className="text-gray-500 block">Meal Payment</span>
-                          <span className="font-medium">{person.meal_payment} DA</span>
-                        </div>
-                        <div>
-                          <span className="text-gray-500 block">Lodging Payment</span>
-                          <span className="font-medium">{person.lodging_payment} DA</span>
-                        </div>
-                        <div>
-                          <span className="text-gray-500 block">Total Payment</span>
-                          <span className="font-bold text-[#00064d]">{person.total_payment} DA</span>
-                        </div>
-                        <div>
-                          <button 
-                            onClick={() => {
-                              handleReportPdf(person.personnel_details?.id)
-                            }}
-                            className=" flex items-center gap-2 text-white px-4 py-2 rounded-lg bg-gray-600 hover:cursor-pointer border shadow-2xl border-gray-200"
-                            >
-                            <FileText />
-                            Rapport
-                          </button>
-                        </div>
-                      </div>
-                     
-                      </>
-                    )
-                  })}
+                <div>
+                  <span className="text-gray-500 block">Year</span>
+                  <span className="font-medium">{selectedMission.year}</span>
                 </div>
-              </div>
-
-              <div className="mt-8 flex justify-end gap-4">
-                <button 
-                  onClick={() => setActiveTab("list")}
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:cursor-pointer"
-                >
-                  Back to List
-                </button>
-                
-                {hasPermission && (
-                  <>
-                    <button 
-                      onClick={() => handleEdit(selectedMission.id)}
-                      className="px-4 py-2 bg-[#870839] text-white rounded-lg flex items-center hover:cursor-pointer"
-                    >
-                      <Edit className="w-4 h-4 mr-2" />
-                      Edit
-                    </button>
-                    
-                    <button 
-                      onClick={() => {
-                        deleteMission(selectedMission.id);
-                        setActiveTab("list");
-                      }}
-                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:cursor-pointer"
-                    >
-                      Delete
-                    </button>
-                  </>
-                )}
+                <div>
+                  <span className="text-gray-500 block">Transport Type</span>
+                  <span className="font-medium">{selectedMission.transport_type}</span>
+                </div>
+                <div>
+                  <span className="text-gray-500 block">Funding Type</span>
+                  <span className="font-medium">{selectedMission.funding_type}</span>
+                </div>
               </div>
             </div>
-          )}
+
+            <div>
+              <h3 className="text-lg font-semibold mb-4 border-b pb-2">Travel Details</h3>
+              <div className="space-y-3">
+                <div>
+                  <span className="text-gray-500 block">Arrival Date</span>
+                  <span className="font-medium">{selectedMission.date_arrival}</span>
+                </div>
+                <div>
+                  <span className="text-gray-500 block">Departure Date</span>
+                  <span className="font-medium">{selectedMission.date_departure}</span>
+                </div>
+                <div>
+                  <span className="text-gray-500 block">Departure Time</span>
+                  <span className="font-medium">{selectedMission.time_departure}</span>
+                </div>
+                <div>
+                  <span className="text-gray-500 block">Arrival Time</span>
+                  <span className="font-medium">{selectedMission.time_arrival}</span>
+                </div>
+                <div>
+                  <span className="text-gray-500 block">Nights Stayed</span>
+                  <span className="font-medium">{selectedMission.nights_stayed}</span>
+                </div>
+                <div>
+                  <span className="text-gray-500 block">Meals Covered</span>
+                  <span className="font-medium">{selectedMission.meals_covered}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="col-span-2">
+              <h3 className="text-lg font-semibold mb-4 border-b pb-2">Personnels Information</h3>
+              {selectedMission.personnel_details?.map((person) => {
+                const personnelId = person.personnel_details?.id;
+                return (
+                  <div key={personnelId} className="grid grid-cols-2 md:grid-cols-4 gap-4 border-b py-6">
+                    <div>
+                      <span className="text-gray-500 block">Personnel Name</span>
+                      <span className="font-medium">{person.personnel_details?.name}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-500 block">Profession</span>
+                      <span className="font-medium">{person.personnel_details?.profession}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-500 block">Grade</span>
+                      <span className="font-medium">{person.personnel_details?.grade.name}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-500 block">Address</span>
+                      <span>{person.personnel_details?.address}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-500 block">Transport Payment</span>
+                      <span className="font-medium">{person.transport_payment} DA</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-500 block">Meal Payment</span>
+                      <span className="font-medium">{person.meal_payment} DA</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-500 block">Lodging Payment</span>
+                      <span className="font-medium">{person.lodging_payment} DA</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div>
+                        <span className="text-gray-500 block">Total Payment</span>
+                        <span className="font-bold text-[#00064d]">{person.total_payment} DA</span>
+                      </div>
+                      <button 
+                        onClick={() => handleGeneratePDF(personnelId, selectedMission.id)}
+                        className="flex items-center gap-2 text-white px-3 py-1 rounded-lg bg-gray-600 hover:cursor-pointer border shadow-2xl border-gray-200"
+                        disabled={pdfLoading[personnelId]}
+                      >
+                        <FileText className="w-4 h-4" />
+                        {pdfLoading[personnelId] ? 'Generating...' : 'PDF'}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="mt-8 flex justify-end gap-4">
+            <button 
+              onClick={() => setActiveTab("list")}
+              className="px-4 py-2 border border-gray-300 rounded-lg hover:cursor-pointer"
+            >
+              Back to List
+            </button>
+            
+            {hasPermission && (
+              <>
+                <button 
+                  onClick={() => handleEdit(selectedMission.id)}
+                  className="px-4 py-2 bg-[#870839] text-white rounded-lg flex items-center hover:cursor-pointer"
+                >
+                  <Edit className="w-4 h-4 mr-2" />
+                  Edit
+                </button>
+                
+                <button 
+                  onClick={() => {
+                    deleteMission(selectedMission.id);
+                    setActiveTab("list");
+                  }}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:cursor-pointer"
+                >
+                  Delete
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
           {/* Add new mission tab */}
           {activeTab === "add" && (

@@ -34,7 +34,7 @@ export default function Register() {
     try {
       const response = await fetchWithAuth(`${API_URL}/api/register/`, {
         method: "POST",
-        body: JSON.stringify({formData}),
+        body: JSON.stringify(formData),
       });
 
       if (response.ok) {
@@ -45,7 +45,7 @@ export default function Register() {
         const data = await response.json();
         localStorage.setItem("access", data.access);
         localStorage.setItem("refresh", data.refresh);
-        navigate("/dashboard");
+        navigate("/settings");
       }else {
        setError("Error Registering the user")      
       }

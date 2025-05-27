@@ -21,6 +21,7 @@ const RoutesList = () => {
         <Route path="/" element={<Home />} />
         <Route element={<PrivateRoute />}>
         <Route path="/missionManager" element={<MissionManager />} />
+        
       </Route>
     </Routes>
   );
