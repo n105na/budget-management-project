@@ -1,28 +1,21 @@
-import {Search, Plus, Edit, UserCircle, X} from 'lucide-react'
+import { Search, Plus, Edit, UserCircle, X, FileText } from 'lucide-react';
 import { fetchWithAuth } from '../src/utils/fetchWithAuth';
-import { useEffect, useState ,useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
+import { toast } from 'react-toastify'; // Add this import
 
 const Personnels = (user) => {
-
-  const [personSearched, setPersonSearched] = useState('')
-
-  const [grades,setGrades] = useState('')
-
+  const [personSearched, setPersonSearched] = useState('');
+  const [grades, setGrades] = useState('');
   const [personnels, setPersonnels] = useState([]);
-
   const [loading, setLoading] = useState(true);
-
   const [wilayas, setWilayas] = useState([]);
-
   const [filters, setFilters] = useState({
     name: '',
     profession: '',
     grade: ''
   });
-
   const [error, setError] = useState(null);
   const [sucess, setSucess] = useState(null);
-
   const API_URL = import.meta.env.VITE_API_URL;
   const [activeTab, setActiveTab] = useState("list");
   const [selectedPerson, setSelectedPerson] = useState(null);
@@ -35,6 +28,8 @@ const Personnels = (user) => {
     address: "",
     wilaya_id: ""
   });
+  const [pdfYear, setPdfYear] = useState(new Date().getFullYear()); // Add state for year input
+  const [pdfLoading, setPdfLoading] = useState(false); // Add loading state for PDF generation
 
   // Check if user has permission to modify personnel
   const hasPermission = user.userLoggedin.role === "Secretaire Generale" || user.userLoggedin.role === "Comptable";
@@ -321,6 +316,40 @@ const Personnels = (user) => {
       grade: ''
     });
   };
+  const handleReportPdf = async (personnelId) => {
+    setPdfLoading(true);
+    try {
+      const url = `${API_URL}/api/personnel-report/${personnelId}/${pdfYear}/`;
+      const res = await fetchWithAuth(url, {
+        method: "GET",
+        headers: { Accept: 'application/pdf' }
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to generate PDF report');
+      }
+
+      const blob = await res.blob();
+      const urlBlob = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = urlBlob;
+      link.download = `rapport_personnel_${personnelId}_${pdfYear}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(urlBlob);
+
+      toast.success('PDF report generated and downloaded');
+    } catch (err) {
+      toast.error(err.message || 'Error generating PDF report');
+      console.error(err);
+    } finally {
+      setPdfLoading(false);
+    }
+  };
+
+
   return(
     <>
       
@@ -470,100 +499,7 @@ const Personnels = (user) => {
             </div>
           )}
 
-          {/* View details tab */}
-          {activeTab === "view" && selectedPerson && (
-            <div className="mx-auto max-w-3xl p-6 bg-white rounded-lg shadow-lg">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-[#00064d]">Personnel Details</h2>
-                <button 
-                  onClick={() => setActiveTab("list")}
-                  className="text-gray-500 hover:text-gray-700 hover:cursor-pointer"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-6">
-                <div>
-                  <h3 className="text-lg font-semibold mb-4 border-b pb-2">Personal Information</h3>
-                  <div className="space-y-3">
-                    <div>
-                      <span className="text-gray-500 block">Full Name</span>
-                      <span className="font-medium">{selectedPerson.name}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-500 block">Profession</span>
-                      <span className="font-medium">{selectedPerson.profession}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-500 block">ID</span>
-                      <span className="font-medium">#{selectedPerson.id}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-500 block">Address</span>
-                      <span className="font-medium">{selectedPerson.address || 'Not specified'}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="text-lg font-semibold mb-4 border-b pb-2">Work Information</h3>
-                  <div className="space-y-3">
-                    <div>
-                      <span className="text-gray-500 block">Grade</span>
-                      <span className="font-medium">{selectedPerson.grade?.name || selectedPerson.profession}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-500 block">Wilaya</span>
-                      <span className="font-medium">
-                        {selectedPerson.wilaya?.name || 'Not specified'}
-                        {selectedPerson.wilaya?.code && ` (Code: ${selectedPerson.wilaya.code})`}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-gray-500 block">Account Number</span>
-                      <span className="font-medium">
-                        {selectedPerson.is_ccp_account ? 'CCP' : ''} {selectedPerson.account_number}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-8 flex justify-end gap-4">
-                <button 
-                  onClick={() => setActiveTab("list")}
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:cursor-pointer"
-                >
-                  Back to List
-                </button>
-                
-                {hasPermission && (
-                  <>
-                    <button 
-                      onClick={() => handleEdit(selectedPerson.id)}
-                      className="px-4 py-2 bg-[#870839] text-white rounded-lg flex items-center  hover:cursor-pointer"
-                    >
-                      <Edit className="w-4 h-4 mr-2" />
-                      Edit
-                    </button>
-                    
-                    <button 
-                      onClick={() => {
-                        deletePersonnel(selectedPerson.id);
-                        setActiveTab("list");
-                      }}
-                      className="px-4 py-2 bg-red-600 text-white rounded-lg  hover:cursor-pointer"
-                    >
-                      Delete
-                    </button>
-                  </>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Add new personnel tab */}
+                    {/* Add new personnel tab */}
           {activeTab === "add" && (
             <div className="mx-auto max-w-3xl p-6 bg-white rounded-lg shadow-lg">
               <div className="flex justify-between items-center mb-6">
@@ -696,6 +632,119 @@ const Personnels = (user) => {
               </div>
             </div>
           )}
+           {/* View details tab */}
+      {activeTab === "view" && selectedPerson && (
+        <div className="mx-auto max-w-3xl p-6 bg-white rounded-lg shadow-lg">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-[#00064d]">Personnel Details</h2>
+            <button 
+              onClick={() => setActiveTab("list")}
+              className="text-gray-500 hover:text-gray-700 hover:cursor-pointer"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6">
+            <div>
+              <h3 className="text-lg font-semibold mb-4 border-b pb-2">Personal Information</h3>
+              <div className="space-y-3">
+                <div>
+                  <span className="text-gray-500 block">Full Name</span>
+                  <span className="font-medium">{selectedPerson.name}</span>
+                </div>
+                <div>
+                  <span className="text-gray-500 block">Profession</span>
+                  <span className="font-medium">{selectedPerson.profession}</span>
+                </div>
+                <div>
+                  <span className="text-gray-500 block">ID</span>
+                  <span className="font-medium">#{selectedPerson.id}</span>
+                </div>
+                <div>
+                  <span className="text-gray-500 block">Address</span>
+                  <span className="font-medium">{selectedPerson.address || 'Not specified'}</span>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-semibold mb-4 border-b pb-2">Work Information</h3>
+              <div className="space-y-3">
+                <div>
+                  <span className="text-gray-500 block">Grade</span>
+                  <span className="font-medium">{selectedPerson.grade?.name || selectedPerson.profession}</span>
+                </div>
+                <div>
+                  <span className="text-gray-500 block">Wilaya</span>
+                  <span className="font-medium">
+                    {selectedPerson.wilaya?.name || 'Not specified'}
+                    {selectedPerson.wilaya?.code && ` (Code: ${selectedPerson.wilaya.code})`}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-gray-500 block">Account Number</span>
+                  <span className="font-medium">
+                    {selectedPerson.is_ccp_account ? 'CCP' : ''} {selectedPerson.account_number}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Add year input for PDF generation */}
+          <div className="mt-4">
+            <label className="block text-gray-700 mb-1">Report Year</label>
+            <input
+              type="number"
+              value={pdfYear}
+              onChange={(e) => setPdfYear(e.target.value)}
+              className="w-32 border rounded-lg p-2"
+              placeholder="e.g., 2025"
+            />
+          </div>
+
+          <div className="mt-8 flex justify-end gap-4">
+            <button 
+              onClick={() => setActiveTab("list")}
+              className="px-4 py-2 border border-gray-300 rounded-lg hover:cursor-pointer"
+            >
+              Back to List
+            </button>
+            
+            {hasPermission && (
+              <>
+                <button 
+                  onClick={() => handleReportPdf(selectedPerson.id)}
+                  className="flex items-center gap-2 text-white px-4 py-2 rounded-lg bg-gray-600 hover:cursor-pointer border shadow-2xl border-gray-200"
+                  disabled={pdfLoading}
+                >
+                  <FileText />
+                  {pdfLoading ? 'Generating...' : 'Rapport'}
+                </button>
+                   
+                <button 
+                  onClick={() => handleEdit(selectedPerson.id)}
+                  className="px-4 py-2 bg-[#870839] text-white rounded-lg flex items-center hover:cursor-pointer"
+                >
+                  <Edit className="w-4 h-4 mr-2" />
+                  Edit
+                </button>
+                
+                <button 
+                  onClick={() => {
+                    deletePersonnel(selectedPerson.id);
+                    setActiveTab("list");
+                  }}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:cursor-pointer"
+                >
+                  Delete
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
           {/* Edit personnel tab */}
           {activeTab === "edit" && selectedPerson && (
