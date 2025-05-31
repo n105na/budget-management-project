@@ -8,8 +8,8 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import OrderingFilter
-
-class PersonnelViewSet(viewsets.ModelViewSet):
+from core.logging_viewset import LoggingModelViewSet
+class PersonnelViewSet(LoggingModelViewSet):
     queryset = Personnel.objects.all()
     serializer_class = PersonnelSerializer
     permission_classes = [IsAuthenticated, RoleBasedPermission]  # Use custom permission
@@ -41,7 +41,7 @@ class PersonnelViewSet(viewsets.ModelViewSet):
         
         return [permission() for permission in permission_classes]
 
-class GradeViewSet(viewsets.ModelViewSet):
+class GradeViewSet(LoggingModelViewSet):
     queryset = Grade.objects.all()
     serializer_class = GradeSerializer
     permission_classes = [IsAuthenticated, RoleBasedPermission]  # Use custom permission
@@ -60,7 +60,7 @@ class GradeViewSet(viewsets.ModelViewSet):
         return Response({"error": "Profession is required"}, status=400)
 
 
-class WilayaViewSet(viewsets.ModelViewSet):
+class WilayaViewSet(LoggingModelViewSet):
     queryset = Wilaya.objects.all()
     serializer_class = WilayaSerializer
     permission_classes = [IsAuthenticated, RoleBasedPermission] 

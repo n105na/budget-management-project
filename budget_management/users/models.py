@@ -15,3 +15,5 @@ class User(AbstractUser):
 
     def is_editor(self):
         return self.role in {self.Role.SECRETAIRE_GENERALE, self.Role.COMPTABLE}
+    def __str__(self):
+       return self.username  # Or: return f"{self.first_name} {self.last_name}"

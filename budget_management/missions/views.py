@@ -7,7 +7,7 @@ from rest_framework.filters import OrderingFilter
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from users.permissions import RoleBasedPermission 
-
+from core.logging_viewset import LoggingModelViewSet
 from .filters import MissionFilter
 from .models import GradePayment, Mission, MissionPersonnel, Budget
 from .serializers import (
@@ -21,9 +21,9 @@ from .serializers import (
 from decimal import Decimal
 from .permissions import IsDashboardViewer
 from rest_framework import generics
+from core.logging_viewset import LoggingModelViewSet
 
-
-class BudgetViewSet(viewsets.ModelViewSet):
+class BudgetViewSet(LoggingModelViewSet):
     queryset = Budget.objects.all()
     serializer_class = BudgetSerializer
     filter_backends = [DjangoFilterBackend, OrderingFilter]
@@ -31,13 +31,13 @@ class BudgetViewSet(viewsets.ModelViewSet):
     ordering_fields = ['added_on', 'amount']
     permission_classes = [IsAuthenticated]
 
-class GradePaymentViewSet(viewsets.ModelViewSet):
+class GradePaymentViewSet(LoggingModelViewSet):
     queryset = GradePayment.objects.all()
     serializer_class = GradePaymentSerializer
     permission_classes = [IsAuthenticated, RoleBasedPermission]
     
 
-class MissionViewSet(viewsets.ModelViewSet):
+class MissionViewSet(LoggingModelViewSet):
     queryset = Mission.objects.all()
     serializer_class = MissionSerializer
     permission_classes = [IsAuthenticated, RoleBasedPermission]
@@ -80,7 +80,7 @@ class MissionViewSet(viewsets.ModelViewSet):
         return queryset
 
 
-class MissionPersonnelViewSet(viewsets.ModelViewSet):
+class MissionPersonnelViewSet(LoggingModelViewSet):
     queryset = MissionPersonnel.objects.all().select_related("mission", "personnel")
     serializer_class = MissionPersonnelSerializer
 
@@ -154,7 +154,7 @@ class GroupedMissionsView(generics.ListAPIView):
 
 
 # MAIN VIEWSET FOR MISSION WITH PERSONNEL CRUD
-class MissionWithPersonnelViewSet(viewsets.ModelViewSet):
+class MissionWithPersonnelViewSet(LoggingModelViewSet):
     """
     ViewSet for creating, updating, and retrieving missions with personnel assignments.
     This allows creating a mission and assigning personnel in a single API call.
@@ -627,6 +627,22 @@ from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
+from reportlab.lib.pagesizes import A4
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.units import inch
+from io import BytesIO
+import logging
+from decimal import Decimal
+from datetime import datetime
+
+logger = logging.getLogger(__name__)
+
 class GeneratePersonnelMissionReportView(APIView):
     permission_classes = [AllowAny]  # Adjust as needed (e.g., IsAuthenticated)
     
@@ -677,7 +693,7 @@ class GeneratePersonnelMissionReportView(APIView):
             ))
             elements.append(Spacer(1, 20))
             elements.append(Paragraph(
-                f"<para align=center><b>RAPPORT DE MISSION - PERSONNEL</b></para>",
+                "<para align=center><b>RAPPORT DE MISSION - PERSONNEL</b></para>",
                 styles['Heading2']
             ))
             elements.append(Spacer(1, 20))
@@ -685,85 +701,69 @@ class GeneratePersonnelMissionReportView(APIView):
             # Personnel Details
             elements.append(Paragraph("<b>INFORMATIONS DU PERSONNEL</b>", styles['Heading3']))
             elements.append(Spacer(1, 10))
-            personnel_data = [
-                ['Nom et Prénom:', personnel.name],
-                ['Profession:', personnel.profession or 'N/A'],
-                ['Grade:', personnel.grade.name if personnel.grade else 'N/A'],
-                ['Numéro de Compte:', personnel.account_number or 'N/A'],
-                ['Type de Compte:', 'CCP' if personnel.is_ccp_account else 'Bancaire'],
-                ['Adresse:', personnel.address or 'N/A'],
-                ['Wilaya:', personnel.wilaya.name if personnel.wilaya else 'N/A'],
+            personnel_items = [
+                f"Nom et Prénom: {personnel.name}",
+                f"Profession: {personnel.profession or 'N/A'}",
+                f"Grade: {personnel.grade.name if personnel.grade else 'N/A'}",
+                f"Numéro de Compte: {personnel.account_number or 'N/A'}",
+                f"Type de Compte: {'CCP' if personnel.is_ccp_account else 'Bancaire'}",
+                f"Adresse: {personnel.address or 'N/A'}",
+                f"Wilaya: {personnel.wilaya.name if personnel.wilaya else 'N/A'}"
             ]
-            personnel_table = Table(personnel_data, colWidths=[2*inch, 4*inch])
-            personnel_table.setStyle(TableStyle([
-                ('BACKGROUND', (0, 0), (0, -1), colors.lightgrey),
-                ('TEXTCOLOR', (0, 0), (0, -1), colors.black),
-                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-                ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
-                ('FONTNAME', (1, 0), (1, -1), 'Helvetica'),
-                ('FONTSIZE', (0, 0), (-1, -1), 10),
-                ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
-                ('BACKGROUND', (1, 0), (1, -1), colors.beige),
-                ('GRID', (0, 0), (-1, -1), 1, colors.black)
-            ]))
-            elements.append(personnel_table)
+            for item in personnel_items:
+                elements.append(Paragraph(f"<bullet>&bull;</bullet>{item}", styles['Normal']))
             elements.append(Spacer(1, 20))
 
             # Mission Details
             elements.append(Paragraph("<b>DÉTAILS DE LA MISSION</b>", styles['Heading3']))
             elements.append(Spacer(1, 10))
-            mission_data = [
-                ['Mission ID:', str(mission.id)],
-                ['Destination:', mission.destination_wilaya.name],
-                ['Nature:', dict(Mission.MISSION_NATURE_CHOICES).get(mission.mission_nature, mission.mission_nature)],
-                ['Date de départ:', mission.date_departure.strftime('%d/%m/%Y')],
-                ['Date d’arrivée:', mission.date_arrival.strftime('%d/%m/%Y')],
-                ['Heure de départ:', mission.time_departure.strftime('%H:%M')],
-                ['Heure d’arrivée:', mission.time_arrival.strftime('%H:%M')],
-                ['Type de transport:', dict(Mission.TRANSPORT_CHOICES).get(mission.transport_type, mission.transport_type)],
-                ['Type de financement:', dict(Mission.FUNDING_CHOICES).get(mission.funding_type, mission.funding_type)],
-                ['Nuits d’hébergement:', str(mission.nights_stayed)],
-                ['Repas couverts:', str(mission.meals_covered)],
+            mission_items = [
+                f"Numéro de la Mission: {str(mission.id)}",
+                f"Destination: {mission.destination_wilaya.name}",
+                f"Nature: {dict(Mission.MISSION_NATURE_CHOICES).get(mission.mission_nature, mission.mission_nature)}",
+                f"Date de Départ: {mission.date_departure.strftime('%d/%m/%Y')}",
+                f"Date d’Arrivée: {mission.date_arrival.strftime('%d/%m/%Y')}",
+                f"Heure de Départ: {mission.time_departure.strftime('%H:%M')}",
+                f"Heure d’Arrivée: {mission.time_arrival.strftime('%H:%M')}",
+                f"Type de Transport: {dict(Mission.TRANSPORT_CHOICES).get(mission.transport_type, mission.transport_type)}",
+                f"Type de Financement: {dict(Mission.FUNDING_CHOICES).get(mission.funding_type, mission.funding_type)}",
+                f"Nuits d’Hébergement: {str(mission.nights_stayed)}",
+                f"Repas Couverts: {str(mission.meals_covered)}"
             ]
-            mission_table = Table(mission_data, colWidths=[2*inch, 4*inch])
-            mission_table.setStyle(TableStyle([
-                ('BACKGROUND', (0, 0), (0, -1), colors.lightgrey),
-                ('TEXTCOLOR', (0, 0), (0, -1), colors.black),
-                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-                ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
-                ('FONTNAME', (1, 0), (1, -1), 'Helvetica'),
-                ('FONTSIZE', (0, 0), (-1, -1), 10),
-                ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
-                ('BACKGROUND', (1, 0), (1, -1), colors.beige),
-                ('GRID', (0, 0), (-1, -1), 1, colors.black)
-            ]))
-            elements.append(mission_table)
+            for item in mission_items:
+                elements.append(Paragraph(f"<bullet>&bull;</bullet>{item}", styles['Normal']))
             elements.append(Spacer(1, 20))
 
             # Payment Details
             elements.append(Paragraph("<b>DÉTAILS DES PAIEMENTS</b>", styles['Heading3']))
             elements.append(Spacer(1, 10))
-            payment_data = [
-                ['Type', 'Montant (DA)'],
-                ['Transport:', f"{mission_personnel.transport_payment:.2f}"],
-                ['Repas:', f"{mission_personnel.meal_payment:.2f}"],
-                ['Hébergement:', f"{mission_personnel.lodging_payment or Decimal('0'):.2f}"],
-                ['Total:', f"{mission_personnel.total_payment:.2f}"]
+            payment_items = [
+                f"Transport: {mission_personnel.transport_payment:.2f} DA",
+                f"Repas: {mission_personnel.meal_payment:.2f} DA",
+                f"Hébergement: {mission_personnel.lodging_payment or Decimal('0'):.2f} DA",
+                f"Total: {mission_personnel.total_payment:.2f} DA"
             ]
-            payment_table = Table(payment_data, colWidths=[3*inch, 2*inch])
-            payment_table.setStyle(TableStyle([
-                ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-                ('FONTSIZE', (0, 0), (-1, -1), 10),
-                ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
-                ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-                ('BACKGROUND', (0, -1), (-1, -1), colors.lightgreen),
-                ('GRID', (0, 0), (-1, -1), 1, colors.black)
-            ]))
-            elements.append(payment_table)
+            for item in payment_items:
+                elements.append(Paragraph(f"<bullet>&bull;</bullet>{item}", styles['Normal']))
+            elements.append(Spacer(1, 20))
+
+            # Recapitulation
+            elements.append(Paragraph("<b>RECAPITULATION</b>", styles['Heading3']))
+            elements.append(Spacer(1, 10))
+            recapitulation_items = [
+                f"Montant Total Engagé: {mission_personnel.total_payment:.2f} DA",
+                "Transport: •",
+                "Repas: •",
+                "Hébergement: •",
+                "Autres: •",
+                "Total: •",
+                "Motif: •",
+                "Visa du Responsable: •",
+                "Visa du Secrétaire Général: •",
+                "Visa du Comptable: •"
+            ]
+            for item in recapitulation_items:
+                elements.append(Paragraph(f"<bullet>&bull;</bullet>{item}", styles['Normal']))
             elements.append(Spacer(1, 20))
 
             # Footer

@@ -17,3 +17,5 @@ class UserSerializer(serializers.ModelSerializer):
         user.set_password(password)  # Hash the password
         user.save()
         return user
+    def __str__(self):
+        return self.username

@@ -9,4 +9,5 @@ router.register(r'wilaya', WilayaViewSet, basename='wilaya')
 
 urlpatterns = [
     path('', include(router.urls)),
+    
 ]
