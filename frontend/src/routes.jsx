@@ -7,6 +7,7 @@ import Register from "./pages/Register";
 import MissionManager from "./pages/MissionManager";
 import LogOut from "./pages/Logout";
 import Profile from "./pages/Profile";
+import Settingss from "../components/Settings";
 
 const RoutesList = () => {
   return (
@@ -17,10 +18,11 @@ const RoutesList = () => {
       <Route path="/register" element={<Register />} />
       <Route path="/profile/:id" element={<Profile />} />
       {/* Private Routes */}
-      
+        
         <Route path="/" element={<Home />} />
         <Route element={<PrivateRoute />}>
         <Route path="/missionManager" element={<MissionManager />} />
+        
         
       </Route>
     </Routes>

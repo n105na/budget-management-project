@@ -158,7 +158,7 @@ const Settings = (user) => {
   const handleEditBudget = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetchWithAuth(`${API_URL}/api/budgets/${editingBudget.id}`, {
+      const response = await fetchWithAuth(`${API_URL}/api/budgets/${editingBudget.id}/`, {
         method: 'PUT',
         body: JSON.stringify(budgetFormData)
       });
@@ -183,7 +183,7 @@ const Settings = (user) => {
   const handleDeleteBudget = async (id) => {
     if (window.confirm('Are you sure you want to delete this budget?')) {
       try {
-        const response = await fetchWithAuth(`${API_URL}/api/budgets/${id}`, {
+        const response = await fetchWithAuth(`${API_URL}/api/budgets/${id}/`, {
           method: 'DELETE'
         });
         
@@ -362,7 +362,7 @@ const Settings = (user) => {
                     <option value="Secretaire Generale">Secretaire Generale</option>
                     <option value="Comptable">Comptable</option>
                     <option value="Commission">Commission</option>
-                    <option value="Dover">Driver</option>
+                    <option value="Doyen">Doyen</option>
                   </select>
                 </div>
                 <div className="flex gap-2">

@@ -226,7 +226,7 @@ from datetime import datetime
 logger = logging.getLogger(__name__)
 
 class GeneratePersonnelReportView(APIView):
-    permission_classes = [AllowAny]  # Adjust as needed (e.g., IsAuthenticated)
+    permission_classes = [IsAuthenticated, RoleBasedPermission]  # Adjust as needed (e.g., IsAuthenticated)
     parser_classes = [JSONParser]
 
     def get(self, request, id, year=None):
