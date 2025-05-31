@@ -280,6 +280,39 @@ console.log("missions  broo:",formData);
         }));
     }
   };
+  // New function to handle global mission PDF generation
+  const handleGenerateMissionPDF = async (missionId) => {
+    setPdfLoading((prev) => ({ ...prev, [`mission_${missionId}`]: true }));
+    try {
+      const url = `${API_URL}/api/mission-report/${missionId}/`;
+      const res = await fetchWithAuth(url, {
+        method: "GET",
+        headers: { Accept: 'application/pdf' }
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to generate mission PDF report');
+      }
+
+      const blob = await res.blob();
+      const urlBlob = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = urlBlob;
+      link.download = `rapport_mission_${missionId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(urlBlob);
+
+      toast.success('Mission PDF report generated and downloaded');
+    } catch (err) {
+      toast.error(err.message || 'Error generating mission PDF report');
+      console.error(err);
+    } finally {
+      setPdfLoading((prev) => ({ ...prev, [`mission_${missionId}`]: false }));
+    }
+  };
 
   // Initial data fetch
   useEffect(() => {
@@ -411,6 +444,7 @@ console.log("missions  broo:",formData);
                       <Edit className="w-4 h-4 mr-1" />
                       Edit
                     </button>
+                    
                   </div>
                 </div>
               ))}
@@ -528,7 +562,7 @@ console.log("missions  broo:",formData);
                       </div>
                       <button 
                         onClick={() => handleGeneratePDF(personnelId, selectedMission.id)}
-                        className="flex items-center gap-2 text-white px-3 py-1 rounded-lg bg-gray-600 hover:cursor-pointer border shadow-2xl border-gray-200"
+                        className="flex items-center gap-2  bg-[#dae2ec] text-[#2b3d50] px-3 py-1 rounded-lg  hover:cursor-pointer border shadow-2xl border-gray-200"
                         disabled={pdfLoading[personnelId]}
                       >
                         <FileText className="w-4 h-4" />
@@ -568,6 +602,16 @@ console.log("missions  broo:",formData);
                 >
                   Delete
                 </button>
+                
+                
+                    <button 
+                      onClick={() => handleGenerateMissionPDF(selectedMission.id)}
+                      className="px-4 py-2  bg-[#dae2ec] text-[#2b3d50] rounded-lg flex items-center hover:cursor-pointer"
+                      disabled={pdfLoading[`mission_${selectedMission.id}`]}
+                    >
+                      <FileText className="w-4 h-4 mr-2" />
+                      {pdfLoading[`mission_${selectedMission.id}`] ? 'Generating...' : 'Mission PDF'}
+                    </button>
               </>
             )}
           </div>

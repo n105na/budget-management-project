@@ -30,7 +30,7 @@ const Settings = (user) => {
     amount: ''
   });
 
-  const hasPermission = user.userLoggedin.role === "Secretaire Generale" || user.userLoggedin.role === "Comptable";
+  const hasPermission = user.userLoggedin.role === "Comptable";
 
   const loadUsers = async () => {
     try {

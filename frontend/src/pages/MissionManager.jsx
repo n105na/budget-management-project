@@ -9,6 +9,8 @@ import Willaya from '../../components/Willaya';
 import Grades from '../../components/Grades';
 import Dashboard from '../../components/Dashboard';
 import Settingss from '../../components/Settings';
+import Reports from '../../components/Reports';
+
 
 const MissionManager = () => {
   const [userTab,setUserTab] = useState(false)
@@ -211,7 +213,7 @@ const MissionManager = () => {
         }
 
         {selectedOption === "Reports" && 
-         <h1 className='text-3xl text-center'>{selectedOption}</h1>
+         <Reports userLoggedin = {user} />
         }
 
         {selectedOption === "Wilaya" && 
