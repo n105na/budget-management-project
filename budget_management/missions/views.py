@@ -748,23 +748,23 @@ class GeneratePersonnelMissionReportView(APIView):
             elements.append(Spacer(1, 20))
 
             # Recapitulation
-            elements.append(Paragraph("<b>RECAPITULATION</b>", styles['Heading3']))
-            elements.append(Spacer(1, 10))
-            recapitulation_items = [
-                f"Montant Total Engagé: {mission_personnel.total_payment:.2f} DA",
-                "Transport: •",
-                "Repas: •",
-                "Hébergement: •",
-                "Autres: •",
-                "Total: •",
-                "Motif: •",
-                "Visa du Responsable: •",
-                "Visa du Secrétaire Général: •",
-                "Visa du Comptable: •"
-            ]
-            for item in recapitulation_items:
-                elements.append(Paragraph(f"<bullet>&bull;</bullet>{item}", styles['Normal']))
-            elements.append(Spacer(1, 20))
+           # elements.append(Paragraph("<b>RECAPITULATION</b>", styles['Heading3']))
+           # elements.append(Spacer(1, 10))
+            #recapitulation_items = [
+             #   f"Montant Total Engagé: {mission_personnel.total_payment:.2f} DA",
+              #  "Transport: •",
+               # "Repas: •",
+                #"Hébergement: •",
+                #"Autres: •",
+                #"Total: •",
+                #"Motif: •",
+                #"Visa du Responsable: •",
+                #"Visa du Secrétaire Général: •",
+                #"Visa du Comptable: •"
+            #]
+            #for item in recapitulation_items:
+            #    elements.append(Paragraph(f"<bullet>&bull;</bullet>{item}", styles['Normal']))
+            #elements.append(Spacer(1, 20))
 
             # Footer
             elements.append(Spacer(1, 30))
