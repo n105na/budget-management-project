@@ -43,8 +43,8 @@ export default function Register() {
           setSuccess(null)
         }, 2000);
         const data = await response.json();
-        localStorage.setItem("access", data.access);
-        localStorage.setItem("refresh", data.refresh);
+        //localStorage.setItem("access", data.access);
+        //localStorage.setItem("refresh", data.refresh);
         navigate("/missionManager");
       }else {
        setError("Error Registering the user")      
@@ -79,7 +79,7 @@ export default function Register() {
               className={formData.role === "Comptable" ? "text-white bg-[#00064d] rounded-full hover:cursor-pointer p-2" : "hover:cursor-pointer p-2"}
             >Comptable</li>
 
-            <li  onClick={(e) => setFormData({...formData,role : "Secretaire"})}
+            <li  onClick={(e) => setFormData({...formData,role : "Secretaire Generale"})}
               className={formData.role === "Secretaire Generale" ? "text-white bg-[#00064d] rounded-full hover:cursor-pointer p-2" : "hover:cursor-pointer p-2"}
             >Secretaire</li>
 

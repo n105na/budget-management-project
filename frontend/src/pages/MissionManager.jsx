@@ -103,44 +103,44 @@ const MissionManager = () => {
         <ul className="space-y-6 p-8 ">
           <li 
             onClick={() => setSelectedOption('Dashboard')}
-            className={`flex items-center gap-8 text-lg hover:bg-[#870839] hover:text-white p-2 cursor-pointer rounded-[4px] ${selectedOption === "Dashboard" ? "bg-[#870839] text-white" : ""}`}>
+            className={`flex items-center gap-8 text-lg hover:bg-[#597ea6] hover:text-white p-2 cursor-pointer rounded-[4px] ${selectedOption === "Dashboard" ? "bg-[#00064d] text-white" : ""}`}>
             <Home className="w-6 h-6" />
             Dashboard
           </li>
           <li 
           onClick={() => setSelectedOption('Missions')}
-          className={`flex items-center gap-8 text-lg hover:bg-[#870839] hover:text-white p-2 cursor-pointer rounded-[4px] ${selectedOption === "Missions" ? "bg-[#870839] text-white" : ""}`}>
+          className={`flex items-center gap-8 text-lg hover:bg-[#597ea6] hover:text-white p-2 cursor-pointer rounded-[4px] ${selectedOption === "Missions" ? "bg-[#00064d] text-white" : ""}`}>
             <Medal className="w-6 h-6" />
             Missions
           </li>
           
           <li 
           onClick={() => setSelectedOption('Personnels')}
-          className={`flex items-center gap-8 text-lg hover:bg-[#870839] hover:text-white p-2 cursor-pointer rounded-[4px] ${selectedOption === "Personnels" ? "bg-[#870839] text-white" : ""}`}>
+          className={`flex items-center gap-8 text-lg hover:bg-[#597ea6] hover:text-white p-2 cursor-pointer rounded-[4px] ${selectedOption === "Personnels" ? "bg-[#00064d] text-white" : ""}`}>
             <Users className="w-6 h-6" />
             Personnels
           </li>
           <li 
           onClick={() => setSelectedOption('Grades')}
-          className={`flex items-center gap-8 text-lg hover:bg-[#870839] hover:text-white p-2 cursor-pointer rounded-[4px] ${selectedOption === "Grades" ? "bg-[#870839] text-white" : ""}`}>
+          className={`flex items-center gap-8 text-lg hover:bg-[#597ea6] hover:text-white p-2 cursor-pointer rounded-[4px] ${selectedOption === "Grades" ? "bg-[#00064d] text-white" : ""}`}>
             <BadgeCheck className="w-6 h-6" />
             Grades
           </li>
           <li 
           onClick={() => setSelectedOption('Wilaya')}
-          className={`flex items-center gap-8 text-lg hover:bg-[#870839] hover:text-white p-2 cursor-pointer rounded-[4px] ${selectedOption === "Wilaya" ? "bg-[#870839] text-white" : ""}`}>
+          className={`flex items-center gap-8 text-lg hover:bg-[#597ea6] hover:text-white p-2 cursor-pointer rounded-[4px] ${selectedOption === "Wilaya" ? "bg-[#00064d] text-white" : ""}`}>
             <MapPin className="w-6 h-6" />
             Wilaya
           </li>
           <li 
           onClick={() => setSelectedOption('Reports')}
-          className={`flex items-center gap-8 text-lg hover:bg-[#870839] hover:text-white p-2 cursor-pointer rounded-[4px] ${selectedOption === "Reports" ? "bg-[#870839] text-white" : ""}`}>
+          className={`flex items-center gap-8 text-lg hover:bg-[#597ea6] hover:text-white p-2 cursor-pointer rounded-[4px] ${selectedOption === "Reports" ? "bg-[#00064d] text-white" : ""}`}>
             <BarChart3 className="w-6 h-6" />
             Reports
           </li>
           <li
           onClick={() => setSelectedOption('Settings')}
-          className={`flex items-center gap-8 text-lg hover:bg-[#870839] hover:text-white p-2 cursor-pointer rounded-[4px] ${selectedOption === "Settings" ? "bg-[#870839] text-white" : ""}`}>
+          className={`flex items-center gap-8 text-lg hover:bg-[#597ea6] hover:text-white p-2 cursor-pointer rounded-[4px] ${selectedOption === "Settings" ? "bg-[#00064d] text-white" : ""}`}>
             <Settings className="w-6 h-6" />
             Settings
           </li>

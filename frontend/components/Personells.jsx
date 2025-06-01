@@ -9,6 +9,7 @@ const Personnels = (user) => {
   const [personnels, setPersonnels] = useState([]);
   const [loading, setLoading] = useState(true);
   const [wilayas, setWilayas] = useState([]);
+  
   const [filters, setFilters] = useState({
     name: '',
     profession: '',
@@ -19,6 +20,7 @@ const Personnels = (user) => {
   const API_URL = import.meta.env.VITE_API_URL;
   const [activeTab, setActiveTab] = useState("list");
   const [selectedPerson, setSelectedPerson] = useState(null);
+  const [formErrors, setFormErrors] = useState({}); // Add this line
   const [formData, setFormData] = useState({
     name: "",
     profession: "",
@@ -33,7 +35,14 @@ const Personnels = (user) => {
 
   // Check if user has permission to modify personnel
   const hasPermission = user.userLoggedin.role === "Secretaire Generale" || user.userLoggedin.role === "Comptable";
-
+  const validateAccountNumber = (value) => {
+    const isNumeric = /^[0-9]*$/.test(value);
+    const is16Digits = value.length === 16;
+    if (!value) return "Account number is required";
+    if (!isNumeric) return "Account number must contain only digits";
+    if (!is16Digits) return "Account number must be exactly 16 digits";
+    return "";
+  };
   //get all grades
   useEffect(() => {
     const fetchGrades = async () => {
@@ -110,38 +119,37 @@ const Personnels = (user) => {
     }
   };
 
-
-  const addPersonnel = async () => {
-    if (!hasPermission) return;
-
-    try {
-      const res = await fetchWithAuth(`${API_URL}/api/personnel/`, {
-        method: "POST",
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      });
-
-      if (res.ok) {
-        setSucess("Personnel added successfully");
-        setError(null);
-
-        await fetchPersonnels();
-        resetForm();
-        setTimeout(() => {
-          setSucess(null);
-          setActiveTab("list");
-        }, 2000);
-
-      } else {
-        throw new Error('Failed to add personnel');
-      }
-
-    } catch (err) {
-      setError("Failed to add personnel");
-      console.error(err);
+const addPersonnel = async () => {
+  if (!hasPermission) return;
+  const accountNumberError = validateAccountNumber(formData.account_number);
+  if (accountNumberError) {
+    setFormErrors({ account_number: accountNumberError });
+    toast.error(accountNumberError);
+    return;
+  }
+  try {
+    const res = await fetchWithAuth(`${API_URL}/api/personnel/`, {
+      method: "POST",
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formData)
+    });
+    if (res.ok) {
+      setSucess("Personnel added successfully!");
+      setError(null);
+      await fetchPersonnels();
+      resetForm();
+      setTimeout(() => {
+        setSucess(null);
+        setActiveTab("list");
+      }, 2000);
+    } else {
+      throw new Error('Failed to add personnel');
     }
-  };
-
+  } catch (err) {
+    setError("Failed to add personnel");
+    console.error(err);
+  }
+};
 
   function transformForPut(data) {
       return {
@@ -157,7 +165,13 @@ const Personnels = (user) => {
 
   const updatePersonnel = async () => {
   if (!hasPermission || !selectedPerson) return;
-
+  const accountNumberError = validateAccountNumber(formData.account_number);
+  if (accountNumberError) {
+    setFormErrors({ account_number: accountNumberError });
+    toast.error(accountNumberError);
+    return;
+  }
+  
   try {
     const res = await fetchWithAuth(`${API_URL}/api/personnel/${selectedPerson.id}/`, {
       method: "PATCH",
@@ -253,12 +267,16 @@ const Personnels = (user) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    
-    setFormData({
-      ...formData,
-      [name]: value
-    });
-    
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+      ...(name === "profession" ? { grade_id: "" } : {}), // Reset grade_id when profession changes
+    }));
+    // Validate account number
+    if (name === "account_number") {
+      const error = validateAccountNumber(value);
+      setFormErrors((prev) => ({ ...prev, account_number: error }));
+    }
   };
 
   // Handle checkbox changes
@@ -348,7 +366,10 @@ const Personnels = (user) => {
       setPdfLoading(false);
     }
   };
-
+  const filteredGrades = useMemo(() => {
+    if (!formData.profession) return grades; // Show all grades if no profession selected
+    return grades.filter(grade => grade.profession === formData.profession);
+  }, [grades, formData.profession]);
 
   return(
     <>
@@ -553,22 +574,27 @@ const Personnels = (user) => {
                 </div>
                 
                 <div className="space-y-4">
-                  <div>
-                    <label className="block text-gray-700 mb-1">Grade Name</label>
-                    <select
-                      name="grade_id"
-                      value={formData.grade_id}
-                      onChange={handleChange}
-                      className="w-full border rounded-lg p-2"
-                    >
-                      <option value="">Select a Grade</option>
-                      {grades && grades.map((grade,key) => {
-                        return(
-                          <option key={key} value={grade.id}>{grade.profession}-{grade.name}</option>
-                        )
-                      })} 
-                    </select>
-                  </div>
+                <div>
+  <label className="block text-gray-700 mb-1">Grade Name</label>
+  <select
+    name="grade_id"
+    value={formData.grade_id}
+    onChange={handleChange}
+    className="w-full border rounded-lg p-2"
+    disabled={!formData.profession} // Disable if no profession selected
+  >
+    <option value="">Select a Grade</option>
+    {filteredGrades.length > 0 ? (
+      filteredGrades.map((grade, key) => (
+        <option key={key} value={grade.id}>
+          {grade.profession}-{grade.name}
+        </option>
+      ))
+    ) : (
+      <option value="" disabled>No grades available</option>
+    )}
+  </select>
+</div>
                   
                   <div>
                     <label className="block text-gray-700 mb-1">Wilaya</label>
@@ -591,16 +617,21 @@ const Personnels = (user) => {
                 </div>
                 
                 <div className="space-y-4">
-                  <div>
-                    <label className="block text-gray-700 mb-1">Account Number</label>
-                    <input
-                      type="text"
-                      name="account_number"
-                      value={formData.account_number}
-                      onChange={handleChange}
-                      className="w-full border rounded-lg p-2"
-                    />
-                  </div>
+                <div>
+  <label className="block text-gray-700 mb-1">Account Number</label>
+  <input
+    type="text"
+    name="account_number"
+    value={formData.account_number}
+    onChange={handleChange}
+    className={`w-full border rounded-lg p-2 mb-1 ${formErrors.account_number ? 'border-red-500' : ''}`}
+    placeholder="Enter 16-digit account number"
+    maxLength={16}
+  />
+  {formErrors.account_number && (
+    <p className="text-sm text-red-600">{formErrors.account_number}</p>
+  )}
+</div>
                   
                   <div className="flex items-center">
                     <input
@@ -799,21 +830,27 @@ const Personnels = (user) => {
                 </div>
                 
                 <div className="space-y-4">
-                  <div>
-                    <label className="block text-gray-700 mb-1">Grade Name</label>
-                    <select
-                      name="grade_id"
-                      value={formData.grade_id}
-                      onChange={handleChange}
-                      className="w-full border rounded-lg p-2"
-                    >
-                      {grades && grades.map((grade,key) => {
-                        return(
-                          <option key={key} value={grade.id}>{grade.profession}-{grade.name}</option>
-                        )
-                      })} 
-                    </select>
-                  </div>
+                <div>
+  <label className="block text-gray-700 mb-1">Grade Name</label>
+  <select
+    name="grade_id"
+    value={formData.grade_id}
+    onChange={handleChange}
+    className="w-full border rounded-lg p-2"
+    disabled={!formData.profession} // Disable if no profession selected
+  >
+    <option value="">Select a Grade</option>
+    {filteredGrades.length > 0 ? (
+      filteredGrades.map((grade, key) => (
+        <option key={key} value={grade.id}>
+          {grade.profession}-{grade.name}
+        </option>
+      ))
+    ) : (
+      <option value="" disabled>No grades available</option>
+    )}
+  </select>
+</div>
                   
                   <div>
                     <label className="block text-gray-700 mb-1">Wilaya</label>
@@ -836,16 +873,21 @@ const Personnels = (user) => {
                 </div>
                 
                 <div className="space-y-4">
-                  <div>
-                    <label className="block text-gray-700 mb-1">Account Number</label>
-                    <input
-                      type="text"
-                      name="account_number"
-                      value={formData.account_number}
-                      onChange={handleChange}
-                      className="w-full border rounded-lg p-2"
-                    />
-                  </div>
+                <div>
+  <label className="block text-gray-700 mb-1">Account Number</label>
+  <input
+    type="text"
+    name="account_number"
+    value={formData.account_number}
+    onChange={handleChange}
+    className={`w-full border rounded-lg p-2 mb-1 ${formErrors.account_number ? 'border-red-500' : ''}`}
+    placeholder="Enter 16-digit account number"
+    maxLength={16}
+  />
+  {formErrors.account_number && (
+    <p className="text-sm text-red-600">{formErrors.account_number}</p>
+  )}
+</div>
                   
                   <div className="flex items-center">
                     <input
